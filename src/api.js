@@ -264,25 +264,40 @@ function request(path, options = {}) {
 export async function requestOtp(identifier, purpose = "LOGIN") {
   return request("/api/v1/auth/otp/request", {
     method: "POST",
-    body: JSON.stringify({ identifier, purpose, visitor_id: await authVisitorId(), referral_code: referralCode() }),
+    body: JSON.stringify({ identifier, purpose, visitor_id: await authVisitorId() }),
   });
 }
 
 export async function verifyOtp(identifier, otp, name = "", purpose = "LOGIN") {
+  const code = purpose === "SIGNUP" ? referralCode() : "";
   const r = await request("/api/v1/auth/otp/verify", {
     method: "POST",
-    body: JSON.stringify({ identifier, otp, name, purpose, visitor_id: await authVisitorId(), referral_code: referralCode() }),
+    body: JSON.stringify({
+      identifier,
+      otp,
+      name,
+      purpose,
+      visitor_id: await authVisitorId(),
+      ...(code ? { referral_code: code } : {}),
+    }),
   });
   saveTokens(r);
+  if (code) clearReferralCode();
   return r;
 }
 
 export async function loginGoogle(id_token) {
+  const code = referralCode();
   const r = await request("/api/v1/auth/google", {
     method: "POST",
-    body: JSON.stringify({ id_token, visitor_id: await authVisitorId(), referral_code: referralCode() }),
+    body: JSON.stringify({
+      id_token,
+      visitor_id: await authVisitorId(),
+      ...(code ? { referral_code: code } : {}),
+    }),
   });
   saveTokens(r);
+  if (code) clearReferralCode();
   return r;
 }
 

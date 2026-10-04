@@ -50,38 +50,71 @@ export default function AuthPage() {
       setGoogleError("Google sign-in is not configured.");
       return undefined;
     }
+    let initialized = false;
+    let renderedWidth = 0;
+    let didRender = false;
+    let retry;
+    let timeout;
+
     const renderGoogleButton = () => {
-      if (!googleButtonRef.current || !window.google?.accounts?.id) return false;
-      window.google.accounts.id.initialize({
-        client_id: clientId,
-        callback: async ({ credential }) => {
-          if (!credential) return setError("Google sign-in did not return a credential.");
-          setGoogleBusy(true);
-          setError("");
-          try {
-            await captureReferralRef.current();
-            const response = await loginGoogle(credential);
-            await loginSuccessRef.current(response);
-            navigate(location.state?.from?.pathname || "/profile", { replace: true });
-          } catch (e) {
-            setError(e.message || "Google sign-in failed. Please try again.");
-          } finally {
-            setGoogleBusy(false);
-          }
-        },
-      });
-      googleButtonRef.current.replaceChildren();
-      window.google.accounts.id.renderButton(googleButtonRef.current, {
-        theme: "outline",
-        size: "large",
-        width: 360,
-        text: isSignup ? "signup_with" : "signin_with",
-      });
+      const button = googleButtonRef.current;
+      const identity = window.google?.accounts?.id;
+      if (!button || !identity) return false;
+
+      const buttonWidth = Math.floor(button.getBoundingClientRect().width);
+      if (!buttonWidth) return false;
+
+      if (!initialized) {
+        identity.initialize({
+          client_id: clientId,
+          callback: async ({ credential }) => {
+            if (!credential) return setError("Google sign-in did not return a credential.");
+            setGoogleBusy(true);
+            setError("");
+            try {
+              await captureReferralRef.current();
+              const response = await loginGoogle(credential);
+              await loginSuccessRef.current(response);
+              navigate(location.state?.from?.pathname || "/profile", { replace: true });
+            } catch (e) {
+              setError(e.message || "Google sign-in failed. Please try again.");
+            } finally {
+              setGoogleBusy(false);
+            }
+          },
+        });
+        initialized = true;
+      }
+
+      if (buttonWidth !== renderedWidth) {
+        button.replaceChildren();
+        identity.renderButton(button, {
+          theme: "outline",
+          size: "large",
+          shape: "pill",
+          logo_alignment: "left",
+          width: buttonWidth,
+          text: "continue_with",
+        });
+        renderedWidth = buttonWidth;
+      }
+
+      didRender = true;
       setGoogleReady(true);
+      window.clearInterval(retry);
+      window.clearTimeout(timeout);
       return true;
     };
 
-    if (renderGoogleButton()) return undefined;
+    const resizeObserver = typeof ResizeObserver !== "undefined"
+      ? new ResizeObserver(renderGoogleButton)
+      : null;
+    if (googleButtonRef.current) resizeObserver?.observe(googleButtonRef.current);
+
+    if (renderGoogleButton()) {
+      return () => resizeObserver?.disconnect();
+    }
+
     let script = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
     if (!script) {
       script = document.createElement("script");
@@ -90,11 +123,11 @@ export default function AuthPage() {
       script.defer = true;
       document.head.appendChild(script);
     }
-    const retry = window.setInterval(() => {
-      if (renderGoogleButton()) window.clearInterval(retry);
+    retry = window.setInterval(() => {
+      renderGoogleButton();
     }, 100);
-    const timeout = window.setTimeout(() => {
-      if (!googleReady) setGoogleError("Google sign-in could not load.");
+    timeout = window.setTimeout(() => {
+      if (!didRender) setGoogleError("Google sign-in could not load.");
       window.clearInterval(retry);
     }, 5000);
     if (script) script.addEventListener("load", renderGoogleButton, { once: true });
@@ -104,22 +137,25 @@ export default function AuthPage() {
     };
     script?.addEventListener("error", onScriptError, { once: true });
     return () => {
+      resizeObserver?.disconnect();
       window.clearInterval(retry);
       window.clearTimeout(timeout);
       script?.removeEventListener("load", renderGoogleButton);
       script?.removeEventListener("error", onScriptError);
     };
-  }, [isSignup, location.state, navigate, googleReady]);
+  }, [isSignup, location.state, navigate]);
 
   const send = async (event) => {
     event.preventDefault();
-    if (!identifier.trim()) return setError("Enter your mobile number or email address.");
+    const email = identifier.trim();
+    if (!email) return setError("Enter your email address.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setError("Enter a valid email address.");
     if (isSignup && !name.trim()) return setError("Enter your full name.");
     setBusy(true);
     setError("");
     try {
       await captureReferral();
-      await requestOtp(identifier.trim(), isSignup ? "SIGNUP" : "LOGIN");
+      await requestOtp(email, isSignup ? "SIGNUP" : "LOGIN");
       setSent(true);
     } catch (e) {
       setError(e.message || "Failed to send OTP. Please try again.");
@@ -199,10 +235,10 @@ export default function AuthPage() {
             {sent ? "Check Your Messages" : isSignup ? "Create Your Account" : "Access Your Account"}
           </h2>
           <p className="mt-1 text-xs text-slate-500">
-            {sent ? `We sent a 6-digit OTP code to ${identifier}.` : "Enter your mobile number or email address to continue."}
+            {sent ? `We sent a 6-digit OTP code to ${identifier}.` : "Enter your email address to continue."}
           </p>
 
-          {hasReferral && (
+          {hasReferral && isSignup && (
             <div className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-accent-50 px-3 py-1.5 text-xs font-semibold text-accent border border-accent/20">
               <Gift size={14} />
               <span>Special referral invitation applied!</span>
@@ -230,14 +266,17 @@ export default function AuthPage() {
 
           <div>
             <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block mb-1" htmlFor="auth-identifier">
-              Mobile Number or Email
+              Email Address
             </label>
             <input
+              type="email"
+              inputMode="email"
+              required
               className="h-11 min-w-0 w-full max-w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-xs font-medium outline-none transition focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
               id="auth-identifier"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
-              placeholder="e.g. 9876543210 or you@email.com"
+              placeholder="you@email.com"
               autoComplete="email"
               disabled={sent || busy}
             />
@@ -301,10 +340,10 @@ export default function AuthPage() {
             Signing in with Google...
           </div>
         ) : (
-          <div>
-            <div ref={googleButtonRef} className="flex min-h-10 min-w-0 justify-center" />
+          <div className="google-auth-shell relative mx-auto flex min-h-[54px] w-full max-w-[280px] items-center justify-center overflow-hidden p-1">
+            <div ref={googleButtonRef} className="flex min-h-10 w-full min-w-0 justify-center" />
             {!googleReady && (
-              <span className={`flex h-10 items-center justify-center text-center text-xs ${googleError ? "text-rose-500" : "text-slate-400"}`}>
+              <span className={`absolute flex h-10 items-center justify-center text-center text-xs ${googleError ? "text-rose-500" : "text-slate-400"}`}>
                 {googleError || "Loading Google sign-in..."}
               </span>
             )}
