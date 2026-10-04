@@ -20,8 +20,6 @@ const NAV_LINKS = [
   { label: "All Tours", path: "/tours" },
   { label: "Destinations", path: "/destinations" },
   { label: "Leaderboard", path: "/leaderboard" },
-  { label: "Domestic", path: "/tours?type=DOMESTIC" },
-  { label: "International", path: "/tours?type=INTERNATIONAL" },
   { label: "Custom Tour", path: "/custom-tour-enquiry" },
   { label: "Contact Us", path: "/contact" },
 ];
