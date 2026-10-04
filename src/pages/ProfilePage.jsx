@@ -431,6 +431,22 @@ export default function ProfilePage() {
           </Link>
 
           <Link
+            to="/points"
+            className="card p-4 hover:border-primary-300 transition-all group flex flex-col justify-between"
+          >
+            <div className="flex items-center justify-between">
+              <span className="grid h-10 w-10 place-items-center rounded-xl bg-amber-50 text-amber-600 group-hover:bg-amber-500 group-hover:text-white transition">
+                <Award size={20} />
+              </span>
+              <ChevronRight size={16} className="text-slate-400 group-hover:text-amber-600 transition-transform group-hover:translate-x-0.5" />
+            </div>
+            <div className="mt-4">
+              <h3 className="font-display text-sm font-bold text-navy">Travel points</h3>
+              <p className="text-[11px] text-slate-400">Your points and rank</p>
+            </div>
+          </Link>
+
+          <Link
             to="/referrals"
             className="card p-4 hover:border-primary-300 transition-all group flex flex-col justify-between"
           >

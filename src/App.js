@@ -16,6 +16,8 @@ import WishlistPage from "./pages/WishlistPage";
 import ReferralsPage from "./pages/ReferralsPage";
 import InvoicesPage from "./pages/InvoicesPage";
 import WalletPage from "./pages/WalletPage";
+import PointsPage from "./pages/PointsPage";
+import LeaderboardPage from "./pages/LeaderboardPage";
 import ToursExplorePage from "./pages/ToursExplorePage";
 import DestinationsPage from "./pages/DestinationsPage";
 import DestinationDetailsPage from "./pages/DestinationDetailsPage";
@@ -167,6 +169,7 @@ function AppRoutes() {
         <Route path="/contact" element={<Layout><ContactUsPage /></Layout>} />
         <Route path="/privacy-policy" element={<Layout><PrivacyPolicyPage /></Layout>} />
         <Route path="/terms-of-service" element={<Layout><TermsOfServicePage /></Layout>} />
+        <Route path="/leaderboard" element={<Layout><LeaderboardPage /></Layout>} />
         <Route
           path="/profile"
           element={
@@ -182,6 +185,7 @@ function AppRoutes() {
         <Route path="/documents" element={<ProtectedRoute><Layout><DocumentsPage /></Layout></ProtectedRoute>} />
         <Route path="/bills-invoices" element={<ProtectedRoute><Layout><InvoicesPage /></Layout></ProtectedRoute>} />
         <Route path="/wallet" element={<ProtectedRoute><Layout><WalletPage /></Layout></ProtectedRoute>} />
+        <Route path="/points" element={<ProtectedRoute><Layout><PointsPage /></Layout></ProtectedRoute>} />
         <Route path="/wishlist" element={<ProtectedRoute><Layout><WishlistPage /></Layout></ProtectedRoute>} />
         <Route path="/referrals" element={<ProtectedRoute><Layout><ReferralsPage /></Layout></ProtectedRoute>} />
         <Route

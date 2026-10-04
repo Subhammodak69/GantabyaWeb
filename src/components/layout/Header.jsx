@@ -2,7 +2,7 @@ import { useTravel } from "../../contexts/TravelContext";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import {
-  UserRound, ChevronDown, User, MessageSquareText, MapPinned, Files, ReceiptText,
+  UserRound, ChevronDown, User, Award, MessageSquareText, MapPinned, Files, ReceiptText,
   Heart, Gift, LoaderCircle, Phone, Headphones, Menu, X,
   Search, Globe, LogOut, WalletCards
 } from "lucide-react";
@@ -19,6 +19,7 @@ const NAV_LINKS = [
   { label: "Home", path: "/" },
   { label: "All Tours", path: "/tours" },
   { label: "Destinations", path: "/destinations" },
+  { label: "Leaderboard", path: "/leaderboard" },
   { label: "Domestic", path: "/tours?type=DOMESTIC" },
   { label: "International", path: "/tours?type=INTERNATIONAL" },
   { label: "Custom Tour", path: "/custom-tour-enquiry" },
@@ -31,6 +32,7 @@ const PROFILE_MENU = [
   { label: "Enquiries", path: "/my-enquiries", Icon: MessageSquareText },
   { label: "Trips", path: "/my-trips", Icon: MapPinned },
   { label: "Wallet & transactions", path: "/wallet", Icon: WalletCards },
+  { label: "Travel points", path: "/points", Icon: Award },
 ];
 
 export default function Header() {

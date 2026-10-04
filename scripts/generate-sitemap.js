@@ -7,6 +7,7 @@ const PUBLIC_ROUTES = [
   { path: "/", changefreq: "weekly", priority: "1.0" },
   { path: "/tours", changefreq: "daily", priority: "0.9" },
   { path: "/destinations", changefreq: "weekly", priority: "0.8" },
+  { path: "/leaderboard", changefreq: "weekly", priority: "0.6" },
   { path: "/custom-tour-enquiry", changefreq: "monthly", priority: "0.8" },
   { path: "/contact", changefreq: "monthly", priority: "0.7" },
   { path: "/privacy-policy", changefreq: "yearly", priority: "0.3" },

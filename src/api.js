@@ -847,3 +847,11 @@ export async function fetchWalletBalance() {
 export async function fetchTransactions(page = 1, pageSize = 20) {
   return request(`/api/v1/transactions?page=${page}&page_size=${pageSize}`, {}, true);
 }
+
+export async function fetchAccountPoints(page = 1, pageSize = 20) {
+  return request(`/api/v1/account/points?page=${page}&page_size=${pageSize}`, {}, true);
+}
+
+export async function fetchPublicRanking(page = 1, pageSize = 10) {
+  return request(`/api/v1/public/ranking?page=${page}&page_size=${pageSize}`);
+}

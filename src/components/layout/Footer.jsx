@@ -4,6 +4,7 @@ import { Phone, Mail, MapPin } from "lucide-react";
 const QUICK_LINKS = [
   { label: "Home", path: "/" },
   { label: "All Tours", path: "/tours" },
+  { label: "Public Leaderboard", path: "/leaderboard" },
   { label: "Custom Tour", path: "/custom-tour-enquiry" },
   { label: "Contact Us", path: "/contact" },
   { label: "Privacy Policy", path: "/privacy-policy" },

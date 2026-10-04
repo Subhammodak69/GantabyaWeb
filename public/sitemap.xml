@@ -16,6 +16,11 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://gantabyaa.com/leaderboard</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://gantabyaa.com/custom-tour-enquiry</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
