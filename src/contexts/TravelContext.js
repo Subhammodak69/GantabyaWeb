@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { fetchMe, getAccessToken, refreshSession, logout, setOnUnauthorized, identifyVisitor } from "../api";
+import { fetchMe, getAccessToken, refreshSession, logout, setOnUnauthorized, identifyVisitor, visitorSessionId } from "../api";
 import { createNotificationSocket, createVisitorSocket } from "../realtime/socket";
 
 const TravelContext = createContext(null);
@@ -39,23 +39,44 @@ export function TravelProvider({ children }) {
         customerId: user?.id || "",
         page: window.location.pathname,
       });
+      const trackingParams = new URLSearchParams(window.location.search);
       realtimeRef.current = socket;
       socket.on("connect", () => {
         socket.emit("visitor_identify", {
           visitor_id: resolvedVisitorId || undefined,
+          session_id: visitorSessionId() || undefined,
           customer_id: user?.id || undefined,
           page: window.location.pathname,
           current_url: window.location.href,
+          referrer: document.referrer || undefined,
+          utm_source: trackingParams.get("utm_source") || undefined,
+          utm_medium: trackingParams.get("utm_medium") || undefined,
+          utm_campaign: trackingParams.get("utm_campaign") || undefined,
+          utm_term: trackingParams.get("utm_term") || undefined,
+          utm_content: trackingParams.get("utm_content") || undefined,
         });
+        socket.emit("page_view", {
+          path: window.location.pathname,
+          current_url: window.location.href,
+          session_id: visitorSessionId() || undefined,
+        });
+        window.dispatchEvent(new CustomEvent("cobtravels:realtime", {
+          detail: { status: "connected" },
+        }));
+      });
+      socket.on("disconnect", () => {
+        window.dispatchEvent(new CustomEvent("cobtravels:realtime", {
+          detail: { status: "disconnected" },
+        }));
       });
       socket.on("connect_error", (error) => {
         window.dispatchEvent(new CustomEvent("cobtravels:realtime", {
           detail: { status: "error", error: error?.message || "Realtime connection failed" },
         }));
       });
-      socket.on("connect", () => {
-        window.dispatchEvent(new CustomEvent("cobtravels:realtime", {
-          detail: { status: "connected" },
+      socket.onAny((event, payload) => {
+        window.dispatchEvent(new CustomEvent("cobtravels:realtime:event", {
+          detail: { event, payload },
         }));
       });
       socket.on("notification.created", (payload) => {
@@ -63,6 +84,7 @@ export function TravelProvider({ children }) {
           detail: { event: "notification.created", data: payload },
         }));
       });
+      socket.connect();
 
       const token = getAccessToken();
       notificationSocket = createNotificationSocket(token, (message) => {
@@ -85,6 +107,7 @@ export function TravelProvider({ children }) {
       socket.emit("page_view", {
         path: location.pathname,
         current_url: window.location.href,
+        session_id: visitorSessionId() || undefined,
       });
     }
   }, [location.pathname]);
@@ -185,4 +208,3 @@ export function useTravel() {
   if (!context) throw new Error("useTravel must be used inside TravelProvider");
   return context;
 }
-
