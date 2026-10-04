@@ -203,23 +203,25 @@ export default function InvoicesPage() {
 
       {selectedInvoice && (
         <div className="modal-viewport fixed inset-0 z-50 flex items-end justify-center bg-slate-950/60 p-0 sm:items-center sm:p-6" onMouseDown={(event) => event.target === event.currentTarget && setSelectedInvoice(null)}>
-          <div role="dialog" aria-modal="true" aria-labelledby="invoice-detail-title" className="modal-panel max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl">
-            <div className="flex items-start justify-between gap-4 border-b border-slate-100 p-5 sm:p-6">
+          <div role="dialog" aria-modal="true" aria-labelledby="invoice-detail-title" className="modal-panel flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl">
+            <div className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 p-5 sm:p-6">
               <div className="flex items-start gap-3">
                 <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary-50 text-primary"><FileText size={19} /></span>
                 <div><p className="text-[10px] font-bold uppercase tracking-wider text-primary">Payment details</p><h2 id="invoice-detail-title" className="mt-1 font-display text-xl font-bold text-navy">{selectedInvoice.booking_code || selectedInvoice.invoice_code || "Booking payment"}</h2><p className="mt-1 text-xs text-slate-500">{selectedInvoice.description || selectedInvoice.destination || "Travel booking"}</p></div>
               </div>
               <button type="button" onClick={() => setSelectedInvoice(null)} className="rounded-full bg-slate-100 p-2 text-slate-500 transition hover:bg-slate-200 hover:text-slate-800" aria-label="Close invoice details"><X size={16} /></button>
             </div>
-            <div className="grid gap-3 p-5 sm:grid-cols-2 sm:p-6">
-              <DetailItem label="Amount" value={formatAmount(selectedInvoice)} />
-              <DetailItem label="Status" value={statusLabel(selectedInvoice.status)} />
-              <DetailItem label="Transaction type" value={selectedInvoice.transaction_type} />
-              <DetailItem label="Category" value={selectedInvoice.category} />
-              <DetailItem label="Payment method" value={selectedInvoice.payment_method} />
-              <DetailItem label="Currency" value={selectedInvoice.currency || "INR"} />
-              <DetailItem label="Transaction date" value={formatDateTime(selectedInvoice.transaction_date)} />
-              <DetailItem label="Booking date" value={formatDate(selectedInvoice.booking_date || selectedInvoice.created_at)} />
+            <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <DetailItem label="Amount" value={formatAmount(selectedInvoice)} />
+                <DetailItem label="Status" value={statusLabel(selectedInvoice.status)} />
+                <DetailItem label="Transaction type" value={selectedInvoice.transaction_type} />
+                <DetailItem label="Category" value={selectedInvoice.category} />
+                <DetailItem label="Payment method" value={selectedInvoice.payment_method} />
+                <DetailItem label="Currency" value={selectedInvoice.currency || "INR"} />
+                <DetailItem label="Transaction date" value={formatDateTime(selectedInvoice.transaction_date)} />
+                <DetailItem label="Booking date" value={formatDate(selectedInvoice.booking_date || selectedInvoice.created_at)} />
+              </div>
             </div>
           </div>
         </div>

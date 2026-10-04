@@ -157,7 +157,7 @@ export default function CustomEnquiryModal({ open, onClose }) {
         </div>
 
         {/* Scrollable Body */}
-        <div className="overflow-y-auto p-6 flex-1">
+        <div className="min-h-0 flex-1 overflow-y-auto p-6">
           {status === "success" ? (
             <div className="flex flex-col items-center py-8 text-center">
               <span className="mb-3 grid h-14 w-14 place-items-center rounded-full bg-green-100 text-2xl text-success font-bold">✓</span>
@@ -336,7 +336,7 @@ export default function CustomEnquiryModal({ open, onClose }) {
                 <p className="rounded-xl bg-rose-50 p-3 text-xs font-semibold text-rose-600">{errorMsg}</p>
               )}
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <div className="sticky bottom-0 -mx-6 flex items-center justify-end gap-3 border-t border-slate-100 bg-white px-6 pb-2 pt-3">
                 <button type="button" onClick={onClose} className="btn-ghost text-xs font-semibold">
                   Cancel
                 </button>

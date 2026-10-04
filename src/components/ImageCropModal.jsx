@@ -185,7 +185,7 @@ export default function ImageCropModal({ imageSrc, open, onCrop, onCancel }) {
         </div>
 
         {/* Crop Viewport */}
-        <div className="relative flex flex-1 flex-col items-center justify-center bg-slate-950 px-4 py-8 select-none">
+        <div className="relative min-h-0 flex-1 overflow-y-auto flex flex-col items-center justify-center bg-slate-950 px-4 py-8 select-none">
           {/* Circular Frame */}
           <div
             ref={containerRef}

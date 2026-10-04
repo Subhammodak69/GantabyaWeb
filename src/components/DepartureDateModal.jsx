@@ -1,5 +1,5 @@
 import React from "react";
-import { Calendar, Users, CheckCircle, ArrowRight, X } from "lucide-react";
+import { Calendar, Users, ArrowRight, X } from "lucide-react";
 
 export default function DepartureDateModal({
   open,
@@ -44,34 +44,35 @@ export default function DepartureDateModal({
       style={{ touchAction: "none", overscrollBehavior: "contain" }}
     >
       <div
-        className="modal-panel relative w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl bg-white p-6 shadow-2xl animate-scale-up max-h-[90vh] overflow-y-auto"
+        className="modal-panel relative flex max-h-[90vh] w-full flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl animate-scale-up sm:max-w-md sm:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
         style={{ touchAction: "pan-y", overscrollBehavior: "contain" }}
       >
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          className="absolute right-4 top-4 rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
-          aria-label="Close modal"
-        >
-          <X size={20} />
-        </button>
-
         {/* Header */}
-        <div className="flex items-center gap-3 mb-4">
-          <div className="grid h-12 w-12 place-items-center rounded-xl bg-primary-50 text-primary">
-            <Calendar size={24} />
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-6 py-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-primary-50 text-primary">
+              <Calendar size={24} />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-bold uppercase tracking-wider text-primary">Departure Information</p>
+              <h3 className="max-w-[260px] truncate font-display text-lg font-bold text-navy">
+                {tourTitle}
+              </h3>
+            </div>
           </div>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-primary">Departure Information</p>
-            <h3 className="font-display text-lg font-bold text-navy truncate max-w-[260px]">
-              {tourTitle}
-            </h3>
-          </div>
+          <button
+            onClick={onClose}
+            className="ml-3 shrink-0 rounded-full p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+            aria-label="Close modal"
+          >
+            <X size={20} />
+          </button>
         </div>
 
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-6 py-4">
         {/* Date Schedule Cards */}
-        <div className="grid grid-cols-2 gap-3 mb-5">
+        <div className="grid grid-cols-2 gap-3">
           <div className="rounded-xl border border-slate-100 bg-slate-50/70 p-3">
             <span className="text-[11px] font-semibold uppercase text-slate-400">Departure Date</span>
             <p className="mt-1 text-sm font-bold text-navy">
@@ -87,7 +88,7 @@ export default function DepartureDateModal({
         </div>
 
         {/* Seat Availability Card */}
-        <div className="rounded-xl border border-primary-100 bg-primary-50/40 p-4 mb-5">
+        <div className="rounded-xl border border-primary-100 bg-primary-50/40 p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Users size={18} className="text-primary" />
@@ -140,9 +141,10 @@ export default function DepartureDateModal({
             </div>
           )}
         </div>
+        </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3 border-t border-slate-100 bg-white px-6 py-4">
           <button
             type="button"
             onClick={onClose}

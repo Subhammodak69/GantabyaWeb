@@ -453,9 +453,9 @@ export default function DocumentsPage() {
         {/* UPLOAD MODAL */}
         {showModal && (
           <div className="modal-viewport fixed inset-0 z-50 flex items-center justify-center bg-navy-dark/75 backdrop-blur-sm p-4 animate-fade-in">
-            <div className="modal-panel relative w-full max-w-md rounded-2xl bg-white shadow-2xl overflow-hidden animate-slide-down">
+            <div className="modal-panel relative flex max-h-[92vh] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-2xl animate-slide-down">
               {/* Modal Header in Deep Navy */}
-              <div className="bg-navy px-6 py-4 text-white flex items-center justify-between border-b border-navy-light">
+              <div className="shrink-0 bg-navy px-6 py-4 text-white flex items-center justify-between border-b border-navy-light">
                 <div className="flex items-center gap-2.5">
                   <div className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-white">
                     <Upload size={16} />
@@ -471,7 +471,8 @@ export default function DocumentsPage() {
               </div>
 
               {/* Form Body */}
-              <form onSubmit={submit} className="p-6 space-y-4">
+              <form onSubmit={submit} className="flex min-h-0 flex-1 flex-col">
+                <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-6">
                 {/* Drop Zone */}
                 <div>
                   <label className="text-xs font-bold uppercase tracking-wider text-slate-700 block mb-1.5">
@@ -569,8 +570,9 @@ export default function DocumentsPage() {
                   />
                 </div>
 
+                </div>
                 {/* Submit & Cancel */}
-                <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                <div className="flex shrink-0 items-center justify-end gap-2.5 border-t border-slate-100 bg-slate-50 px-6 py-4">
                   <button type="button" onClick={closeModal} className="btn-ghost text-xs font-semibold">
                     Cancel
                   </button>

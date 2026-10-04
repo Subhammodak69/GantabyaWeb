@@ -378,13 +378,14 @@ export default function EnquiriesPage() {
       </main>
       {editing && editForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy-dark/70 p-4">
-          <form onSubmit={saveEdit} className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
-            <div className="flex items-center justify-between">
+          <form onSubmit={saveEdit} className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-6 py-4">
               <h2 className="font-display text-xl font-bold text-navy">Edit enquiry</h2>
               <button type="button" onClick={() => setEditing(null)} className="rounded-lg bg-slate-100 p-2 text-slate-600" aria-label="Close edit form">
                 <X size={18} />
               </button>
             </div>
+            <div className="min-h-0 flex-1 overflow-y-auto p-6">
             {lookupError && (
               <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-medium text-amber-800" role="status">
                 {lookupError}
@@ -516,10 +517,13 @@ export default function EnquiriesPage() {
                 className="mt-1 min-h-24 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-normal text-slate-800 outline-none focus:border-primary"
               />
             </label>
-            <button disabled={saving} className="btn-primary mt-5 flex w-full items-center justify-center gap-2">
+            </div>
+            <div className="shrink-0 border-t border-slate-100 bg-slate-50 px-6 py-4">
+            <button disabled={saving} className="btn-primary flex w-full items-center justify-center gap-2">
               {saving && <LoaderCircle size={16} className="animate-spin" />}
               Save changes
             </button>
+            </div>
           </form>
         </div>
       )}

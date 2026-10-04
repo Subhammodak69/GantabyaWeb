@@ -90,9 +90,74 @@ export default function TripsPage() {
         {loading ? <div className="card flex items-center justify-center p-12 text-slate-400"><LoaderCircle className="animate-spin text-primary" size={26} /></div> : trips.length ? <div className="grid gap-5 md:grid-cols-2">{trips.map((trip) => <article key={trip.id} className="card flex flex-col justify-between p-6"><div><div className="mb-2 flex items-center justify-between gap-2"><span className="text-[10px] font-bold uppercase tracking-wider text-primary">{trip.booking_code || "PLANNED TRIP"}</span><span className="rounded-full border border-primary-200 bg-primary-50 px-2.5 py-0.5 text-[10px] font-bold uppercase text-primary">{trip.status || "TENTATIVE"}</span></div><h2 className="font-display text-xl font-bold text-navy">{trip.destination_name || trip.package?.name || "Custom Journey"}</h2><p className="mt-1 text-xs text-slate-500">{trip.package?.name || ""}{trip.variant?.name ? ` • ${trip.variant.name}` : ""}</p><div className="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-slate-50 p-3 text-xs text-slate-600"><div className="flex items-center gap-1.5"><Calendar size={14} className="text-primary" /><span>{formatDate(trip.departure_date)}</span></div><div className="flex items-center gap-1.5"><Users size={14} className="text-primary" /><span>{tripCount(trip)} Traveller{tripCount(trip) === 1 ? "" : "s"}</span></div></div></div><button type="button" onClick={() => openTour(trip)} className="mt-5 flex items-center justify-end gap-1 border-t border-slate-100 pt-3 text-xs font-bold text-primary hover:underline">View booking details <ChevronRight size={15} /></button></article>)}</div> : <div className="card p-12 text-center"><Plane className="mx-auto text-primary-300" size={36} /><h2 className="mt-3 font-display text-lg font-bold text-navy">No Trips Scheduled Yet</h2><p className="mx-auto mt-1 max-w-xs text-xs text-slate-500">Your customer-tour bookings will appear here once they are created.</p><Link to="/tours" className="btn-primary mt-6 text-xs font-bold">Explore Available Tours →</Link></div>}
       </section>
 
-      {selectedTour && <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/60 p-0 sm:items-center sm:p-6" onMouseDown={(event) => event.target === event.currentTarget && setSelectedTour(null)}><div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-t-3xl bg-white p-6 shadow-2xl sm:rounded-3xl"><div className="flex items-start justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Booking details</p><h2 className="mt-1 font-display text-2xl font-bold text-navy">{selectedTour.booking_code || "Your booking"}</h2></div><button type="button" onClick={() => setSelectedTour(null)} className="rounded-full bg-slate-100 p-2 text-slate-600"><X size={18} /></button></div>{detailLoading ? <div className="flex justify-center p-12"><LoaderCircle className="animate-spin text-primary" /></div> : <><div className="mt-4">{error && <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}</div><h3 className="mt-5 font-display text-xl font-bold text-navy">{selectedTour.destination_name || selectedTour.package?.name || "Your journey"}</h3><p className="mt-1 text-xs text-slate-500">{selectedTour.package?.name || ""}{selectedTour.variant?.name ? ` • ${selectedTour.variant.name}` : ""}</p><div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">{[["Departure", formatDate(selectedTour.departure_date)], ["Return", formatDate(selectedTour.return_date)], ["Total", `₹${selectedTour.total_amount ?? "0"}`], ["Due", `₹${selectedTour.due_amount ?? "0"}`]].map(([label, value]) => <div key={label} className="rounded-xl bg-slate-50 p-3"><p className="text-[10px] font-bold uppercase text-slate-400">{label}</p><p className="mt-1 text-sm font-bold text-navy">{value}</p></div>)}</div><div className="mt-7 flex items-center justify-between"><h3 className="font-display text-lg font-bold text-navy">Travellers</h3><button type="button" onClick={() => openTraveller()} className="flex items-center gap-1 text-xs font-bold text-primary"><Plus size={15} /> Add traveller</button></div><div className="mt-3 divide-y divide-slate-100">{(selectedTour.travellers || []).length ? selectedTour.travellers.map((item) => <div key={item.id} className="flex items-center gap-3 py-3"><div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-50 text-primary"><Users size={16} /></div><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold text-navy">{item.full_name}{item.is_primary ? " · Primary" : ""}</p><p className="truncate text-xs text-slate-500">{item.email || item.mobile || item.relationship_to_customer || "Traveller details"}</p></div><button type="button" onClick={() => openTraveller(item)} className="text-xs font-bold text-primary">Edit</button><button type="button" onClick={() => removeTraveller(item)} className="text-red-500"><Trash2 size={16} /></button></div>) : <p className="py-4 text-sm text-slate-500">No travellers added yet.</p>}</div></>}</div></div>}
+      {selectedTour && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/60 p-0 sm:items-center sm:p-6" onMouseDown={(event) => event.target === event.currentTarget && setSelectedTour(null)}>
+          <div className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl">
+            <div className="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 p-5 sm:p-6">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary">Booking details</p>
+                <h2 className="mt-1 font-display text-2xl font-bold text-navy">{selectedTour.booking_code || "Your booking"}</h2>
+              </div>
+              <button type="button" onClick={() => setSelectedTour(null)} className="rounded-full bg-slate-100 p-2 text-slate-600" aria-label="Close booking details"><X size={18} /></button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6">
+              {detailLoading ? (
+                <div className="flex justify-center p-12"><LoaderCircle className="animate-spin text-primary" /></div>
+              ) : (
+                <>
+                  {error && <div className="mt-1 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+                  <h3 className="mt-3 font-display text-xl font-bold text-navy">{selectedTour.destination_name || selectedTour.package?.name || "Your journey"}</h3>
+                  <p className="mt-1 text-xs text-slate-500">{selectedTour.package?.name || ""}{selectedTour.variant?.name ? ` • ${selectedTour.variant.name}` : ""}</p>
+                  <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    {[["Departure", formatDate(selectedTour.departure_date)], ["Return", formatDate(selectedTour.return_date)], ["Total", `₹${selectedTour.total_amount ?? "0"}`], ["Due", `₹${selectedTour.due_amount ?? "0"}`]].map(([label, value]) => (
+                      <div key={label} className="rounded-xl bg-slate-50 p-3"><p className="text-[10px] font-bold uppercase text-slate-400">{label}</p><p className="mt-1 text-sm font-bold text-navy">{value}</p></div>
+                    ))}
+                  </div>
+                  <div className="mt-7 flex items-center justify-between">
+                    <h3 className="font-display text-lg font-bold text-navy">Travellers</h3>
+                    <button type="button" onClick={() => openTraveller()} className="flex items-center gap-1 text-xs font-bold text-primary"><Plus size={15} /> Add traveller</button>
+                  </div>
+                  <div className="mt-3 divide-y divide-slate-100">
+                    {(selectedTour.travellers || []).length ? selectedTour.travellers.map((item) => (
+                      <div key={item.id} className="flex items-center gap-3 py-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-50 text-primary"><Users size={16} /></div>
+                        <div className="min-w-0 flex-1"><p className="truncate text-sm font-bold text-navy">{item.full_name}{item.is_primary ? " · Primary" : ""}</p><p className="truncate text-xs text-slate-500">{item.email || item.mobile || item.relationship_to_customer || "Traveller details"}</p></div>
+                        <button type="button" onClick={() => openTraveller(item)} className="text-xs font-bold text-primary">Edit</button>
+                        <button type="button" onClick={() => removeTraveller(item)} className="text-red-500" aria-label={`Remove ${item.full_name}`}><Trash2 size={16} /></button>
+                      </div>
+                    )) : <p className="py-4 text-sm text-slate-500">No travellers added yet.</p>}
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="flex shrink-0 justify-end border-t border-slate-100 bg-slate-50 px-5 py-4 sm:px-6">
+              <button type="button" onClick={() => setSelectedTour(null)} className="btn-ghost text-xs font-semibold">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
 
-      {travellerOpen && <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/60 p-4"><form onSubmit={saveTraveller} className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl"><div className="flex items-center justify-between"><h2 className="font-display text-xl font-bold text-navy">{editingTraveller ? "Edit traveller" : "Add traveller"}</h2><button type="button" onClick={() => setTravellerOpen(false)} className="rounded-full bg-slate-100 p-2 text-slate-600"><X size={18} /></button></div><div className="mt-5 grid gap-3 sm:grid-cols-2">{[["full_name", "Full name", "Enter full name"], ["gender", "Gender", "e.g. Male"], ["date_of_birth", "Date of birth", "YYYY-MM-DD"], ["mobile", "Mobile", "Mobile number"], ["email", "Email", "Email address"], ["relationship_to_customer", "Relationship", "e.g. Spouse"]].map(([key, label, placeholder]) => <label key={key} className="text-xs font-bold text-slate-600">{label}<input required={key === "full_name"} value={traveller[key]} onChange={(event) => setTraveller((current) => ({ ...current, [key]: event.target.value }))} placeholder={placeholder} className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-normal text-slate-800 outline-none focus:border-primary" /></label>)}</div><label className="mt-4 flex items-center gap-2 text-sm font-semibold text-slate-700"><input type="checkbox" checked={traveller.is_primary} onChange={(event) => setTraveller((current) => ({ ...current, is_primary: event.target.checked }))} /> Primary traveller</label><button disabled={saving} className="btn-primary mt-6 flex w-full items-center justify-center gap-2">{saving && <LoaderCircle size={16} className="animate-spin" />}{editingTraveller ? "Save changes" : "Add traveller"}</button></form></div>}
+      {travellerOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/60 p-4">
+          <form onSubmit={saveTraveller} className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
+            <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-6 py-4">
+              <h2 className="font-display text-xl font-bold text-navy">{editingTraveller ? "Edit traveller" : "Add traveller"}</h2>
+              <button type="button" onClick={() => setTravellerOpen(false)} className="rounded-full bg-slate-100 p-2 text-slate-600" aria-label="Close traveller form"><X size={18} /></button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto p-6">
+              <div className="grid gap-3 sm:grid-cols-2">
+                {[["full_name", "Full name", "Enter full name"], ["gender", "Gender", "e.g. Male"], ["date_of_birth", "Date of birth", "YYYY-MM-DD"], ["mobile", "Mobile", "Mobile number"], ["email", "Email", "Email address"], ["relationship_to_customer", "Relationship", "e.g. Spouse"]].map(([key, label, placeholder]) => (
+                  <label key={key} className="text-xs font-bold text-slate-600">{label}<input required={key === "full_name"} value={traveller[key]} onChange={(event) => setTraveller((current) => ({ ...current, [key]: event.target.value }))} placeholder={placeholder} className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-normal text-slate-800 outline-none focus:border-primary" /></label>
+                ))}
+              </div>
+              <label className="mt-4 flex items-center gap-2 text-sm font-semibold text-slate-700"><input type="checkbox" checked={traveller.is_primary} onChange={(event) => setTraveller((current) => ({ ...current, is_primary: event.target.checked }))} /> Primary traveller</label>
+            </div>
+            <div className="shrink-0 border-t border-slate-100 bg-slate-50 px-6 py-4">
+              <button disabled={saving} className="btn-primary flex w-full items-center justify-center gap-2">{saving && <LoaderCircle size={16} className="animate-spin" />}{editingTraveller ? "Save changes" : "Add traveller"}</button>
+            </div>
+          </form>
+        </div>
+      )}
     </main>
   );
 }
