@@ -449,6 +449,24 @@ export async function heartbeatVisitorSession(currentPage=window.location.pathna
 export async function endVisitorSession(exitPage=window.location.pathname){const id=storage.getItem(VISITOR_SESSION_ID);if(!id)return null;storage.removeItem(VISITOR_SESSION_ID);try{const r=await request(`/api/v1/visitors/sessions/${encodeURIComponent(id)}/end`,{method:"POST",body:JSON.stringify({exit_page:exitPage}),keepalive:true});return r?.data||null;}catch{return null;}}
 export async function trackVisitorEvent(eventName,page=window.location.pathname,eventMetadata={}){const visitor=visitorId();const session=storage.getItem(VISITOR_SESSION_ID);if(!visitor||!session)return null;try{const r=await request("/api/v1/visitors/events",{method:"POST",body:JSON.stringify({visitor_id:visitor,session_id:session,event_name:eventName,page,event_metadata:eventMetadata}),keepalive:true});return r?.data||null;}catch{return null;}}
 export async function trackVisitorEventsBatch(events=[]){if(!events.length)return null;try{const r=await request("/api/v1/visitors/events/batch",{method:"POST",body:JSON.stringify({events}),keepalive:true});return r?.data||null;}catch{return null;}}
+
+function displayText(value) {
+  if (typeof value === "string" || typeof value === "number") return String(value);
+  if (Array.isArray(value)) return value.map(displayText).filter(Boolean).join("\n");
+  if (!value || typeof value !== "object") return "";
+  if (Array.isArray(value.items)) return value.items.map(displayText).filter(Boolean).join("\n");
+  for (const key of ["text", "title", "name", "label", "description", "value", "city", "place"]) {
+    const text = displayText(value[key]);
+    if (text) return text;
+  }
+  return "";
+}
+
+function listItems(value) {
+  if (Array.isArray(value)) return value;
+  return Array.isArray(value?.items) ? value.items : [];
+}
+
 function variant(v, i = 0) {
   const realId = v.variant_id || v.id;
   const price = v.selling_price ?? v.price ?? v.starting_price ?? v.list_price ?? 0;
@@ -457,15 +475,22 @@ function variant(v, i = 0) {
     id: realId || `variant-${i}`,
     variant_id: isValidUUID(realId) ? realId : undefined,
     slug: v.slug || `variant-${i}`,
+    name: displayText(v.name || v.season_name),
+    season_name: displayText(v.season_name),
+    badge: displayText(v.badge),
     cover_image: v.banner?.image || v.cover_image || "",
     duration: `${v.duration_nights || 0}N | ${v.duration_days || 0}D`,
     starting_price: Number(price || 0),
     price: Number(price || 0),
     list_price: v.list_price == null ? null : Number(v.list_price),
     selling_price: v.selling_price == null ? null : Number(v.selling_price),
-    dates: (v.departure_dates || v.dates || []).map((date) => ({ ...date, date: date.departure_date || date.date || "", departure_date: date.departure_date || date.date || "", return_date: date.return_date || "", total_seats: date.total_seats != null ? Number(date.total_seats) : undefined, available_seats: date.available_seats != null ? Number(date.available_seats) : undefined })),
-    gallery: (v.gallery || []).filter((x) => x?.url).map((x) => ({ ...x, url: x.url })),
-    route: v.route || [],
+    dates: listItems(v.departure_dates || v.dates).map((date) => ({ ...date, date: date.departure_date || date.date || "", departure_date: date.departure_date || date.date || "", return_date: date.return_date || "", total_seats: date.total_seats != null ? Number(date.total_seats) : undefined, available_seats: date.available_seats != null ? Number(date.available_seats) : undefined })),
+    gallery: listItems(v.gallery).filter((x) => x?.url).map((x) => ({ ...x, url: x.url })),
+    route: listItems(v.route).map((stop) => ({ ...stop, city: displayText(stop?.city), place: displayText(stop?.place) || displayText(stop?.city) })),
+    highlights: listItems(v.highlights).map((highlight) => typeof highlight === "string" ? highlight : { ...highlight, text: displayText(highlight?.text || highlight?.title || highlight) }),
+    itinerary: listItems(v.itinerary).map((day) => ({ ...day, title: displayText(day?.title), description: displayText(day?.description) })),
+    inclusions: listItems(v.inclusions).map(displayText).filter(Boolean),
+    exclusions: listItems(v.exclusions).map(displayText).filter(Boolean),
     is_default: Boolean(v.is_default ?? i === 0),
   };
 }
@@ -477,16 +502,17 @@ function summary(x) {
     id: x.slug || x.id,
     slug: x.slug || x.id,
     code: x.tour_code,
-    title: x.title,
+    title: displayText(x.title),
+    description: displayText(x.description),
     is_wishlist: Boolean(x.is_wishlist),
     image: x.banner?.image || "",
     video: x.banner?.video || "",
-    season_name: x.season_name || "",
-    badge: x.badge || "",
-    destination: x.destination_name || x.destination || "",
+    season_name: displayText(x.season_name),
+    badge: displayText(x.badge),
+    destination: displayText(x.destination_name) || displayText(x.destination),
     price: x.selling_price == null ? (x.price == null ? null : Number(x.price)) : Number(x.selling_price),
-    duration: x.duration || "",
-    route: x.route || [],
+    duration: displayText(x.duration),
+    route: listItems(x.route).map((stop) => ({ ...stop, city: displayText(stop?.city), place: displayText(stop?.place) || displayText(stop?.city) })),
     accent: "#f2c14e",
     default_variant_id: x.default_variant?.id || x.default_variant_id || undefined,
   };
@@ -583,6 +609,19 @@ export async function fetchVehicles(page = 1, pageSize = 20, vehicleType = "", s
   return request(`/api/v1/vehicles?${query.toString()}`);
 }
 
+export async function fetchRulesRegulations(type) {
+  const tourType = String(type).toUpperCase() === "DOMESTIC" ? "dom" : "int";
+  const query = new URLSearchParams({ type: tourType });
+  const response = await request(`/api/v1/rules-regulations?${query.toString()}`);
+  return listItems(response?.data)
+    .filter((rule) => rule?.is_active !== false)
+    .map((rule) => ({
+      ...rule,
+      rule_title: displayText(rule?.rule_title),
+      regulations: displayText(rule?.regulations),
+    }));
+}
+
 export async function fetchPackage(slug, summaryData = null) {
   let d;
   if (summaryData?.package_id || summaryData?.id) {
@@ -618,13 +657,15 @@ export async function fetchPackage(slug, summaryData = null) {
     slug: d.slug,
     is_wishlist: Boolean(d.is_wishlist),
     code: d.tour_code,
-    destination: d.destination_name || d.destination || "",
+    title: displayText(d.title),
+    description: displayText(d.description),
+    destination: displayText(d.destination_name) || displayText(d.destination),
     image: d.default_variant?.banner?.image || d.banner?.image || d.image || "",
     price: Number(d.default_variant?.selling_price ?? d.default_variant?.price ?? d.price ?? 0),
     duration: d.duration || `${d.default_variant?.duration_nights || 0}N | ${d.default_variant?.duration_days || 0}D`,
     seasons,
-    gallery: (d.default_variant?.gallery || []).filter((x) => x?.url),
-    route: d.default_variant?.route || [],
+    gallery: listItems(d.default_variant?.gallery).filter((x) => x?.url),
+    route: listItems(d.default_variant?.route).map((stop) => ({ ...stop, city: displayText(stop?.city), place: displayText(stop?.place) || displayText(stop?.city) })),
     default_variant_id: d.default_variant?.id || undefined,
   };
 }

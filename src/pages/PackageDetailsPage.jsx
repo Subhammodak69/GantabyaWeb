@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useTravel } from "../contexts/TravelContext";
 import usePackages from "../hooks/usePackages";
 import Seo from "../components/Seo";
-import { addToWishlist, checkReviewEligibility, fetchReviews, fetchVariant, removeFromWishlist, submitReview, updateReview } from "../api";
+import { addToWishlist, checkReviewEligibility, fetchReviews, fetchRulesRegulations, fetchVariant, removeFromWishlist, submitReview, updateReview } from "../api";
 import {
   Heart, LoaderCircle, MapPin, Clock, Check, X as CloseIcon,
   Video, Image as ImageIcon, MessageCircle, Share2, ChevronDown, ChevronUp
@@ -26,6 +26,9 @@ export default function PackageDetailsPage() {
   const [editingReview, setEditingReview] = useState(false);
   const [reviewState, setReviewState] = useState({ loading: false, message: "", error: "" });
   const [reviews, setReviews] = useState([]);
+  const [rulesRegulations, setRulesRegulations] = useState([]);
+  const [rulesLoading, setRulesLoading] = useState(false);
+  const [rulesError, setRulesError] = useState("");
   const [eligibility, setEligibility] = useState(null);
   const [eligibilityLoading, setEligibilityLoading] = useState(false);
   const [wishlistState, setWishlistState] = useState("idle");
@@ -45,6 +48,27 @@ export default function PackageDetailsPage() {
       setWishlistState(pack.is_wishlist ? "added" : "idle");
     }
   }, [pack]);
+
+  const loadRulesRegulations = useCallback(async () => {
+    if (!pack?.type) return;
+    setRulesLoading(true);
+    setRulesError("");
+    try {
+      const rules = await fetchRulesRegulations(pack.type);
+      setRulesRegulations(rules);
+    } catch (requestError) {
+      setRulesRegulations([]);
+      setRulesError(requestError?.message || "Could not load package rules and regulations.");
+    } finally {
+      setRulesLoading(false);
+    }
+  }, [pack?.type]);
+
+  useEffect(() => {
+    setRulesRegulations([]);
+    setRulesError("");
+    if (pack?.type) loadRulesRegulations();
+  }, [loadRulesRegulations, pack?.type]);
 
   const toggleWishlist = async () => {
     if (!isMember) {
@@ -536,6 +560,39 @@ export default function PackageDetailsPage() {
             </ul>
           </div>
         </div>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+        <p className="eyebrow">Before You Travel</p>
+        <h2 className="section-title mb-5 text-xl sm:text-2xl">Rules &amp; Regulations</h2>
+        {rulesLoading ? (
+          <div className="card flex items-center gap-3 p-5 text-sm text-slate-500">
+            <LoaderCircle size={18} className="animate-spin text-primary" />
+            Loading {pack.type === "DOMESTIC" ? "domestic" : "international"} rules...
+          </div>
+        ) : rulesError ? (
+          <div className="card flex flex-wrap items-center justify-between gap-3 p-5">
+            <p className="text-sm text-rose-600">{rulesError}</p>
+            <button type="button" onClick={loadRulesRegulations} className="rounded-lg bg-primary px-4 py-2 text-xs font-bold text-white">
+              Try again
+            </button>
+          </div>
+        ) : rulesRegulations.length ? (
+          <div className="grid gap-4 md:grid-cols-2">
+            {rulesRegulations.map((rule) => (
+              <article key={rule.id} className="card p-5">
+                <h3 className="font-display text-sm font-bold text-navy">{rule.rule_title}</h3>
+                {rule.regulations && (
+                  <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-600">{rule.regulations}</p>
+                )}
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="card p-5 text-sm text-slate-500">
+            No additional rules or regulations are available for this package.
+          </div>
+        )}
       </section>
 
       {/* Upcoming Departure Dates */}
