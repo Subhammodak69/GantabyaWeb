@@ -191,6 +191,12 @@ export default function ProfilePage() {
     }
   };
 
+  const removeProfilePhoto = () => {
+    setProfileFile(null);
+    setProfilePreview("");
+    setProfileForm((current) => ({ ...current, profile_pic: "" }));
+  };
+
   const saveProfile = async (event) => {
     event.preventDefault();
     if (!profileForm.name.trim()) return setEditError("Please enter your name.");
@@ -199,7 +205,13 @@ export default function ProfilePage() {
     try {
       const response = await updateMe({ ...profileForm, name: profileForm.name.trim(), source: "WEBSITE", is_active: true });
       const updatedUser = response?.data?.user || response?.data || response?.user;
-      setUser(updatedUser ? { ...user, ...updatedUser } : { ...user, ...profileForm });
+      setUser({
+        ...user,
+        ...(updatedUser || {}),
+        profile_pic: profileForm.profile_pic,
+        profile_image: profileForm.profile_pic,
+        profile_picture: profileForm.profile_pic,
+      });
       setEditing(false);
     } catch (error) {
       setEditError(error.message || "Could not update your profile.");
@@ -710,6 +722,16 @@ export default function ProfilePage() {
                     <Camera size={13} />
                   </label>
                 </div>
+                {profilePreview && (
+                   <button
+                     type="button"
+                     className="text-[11px] font-bold text-rose-600 hover:text-rose-700 disabled:opacity-50"
+                     onClick={removeProfilePhoto}
+                     disabled={saving || uploadingPhoto}
+                   >
+                     Remove profile picture
+                   </button>
+                )}
                 <input className="hidden" id="profile-picture" type="file" accept="image/*" onChange={chooseProfilePhoto} disabled={saving || uploadingPhoto} />
                 <span className="text-[11px] text-slate-500">
                   {uploadingPhoto ? "Uploading photo…" : "Tap camera icon to change profile photo"}

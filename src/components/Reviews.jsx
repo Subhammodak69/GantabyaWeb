@@ -1,12 +1,14 @@
-import { Star } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { useState } from "react";
 
 export default function Reviews({ reviews = [] }) {
+  const [selectedMedia, setSelectedMedia] = useState(null);
   const score = reviews.length
     ? (reviews.reduce((sum, item) => {
         const review = Array.isArray(item) ? { rating: item[1] } : item;
         return sum + Number(review.rating || 0);
       }, 0) / reviews.length).toFixed(1)
-    : "5.0";
+    : "0.0";
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
@@ -14,21 +16,6 @@ export default function Reviews({ reviews = [] }) {
         <div>
           <p className="eyebrow">Guest Testimonials</p>
           <h2 className="section-title text-xl sm:text-2xl">Traveller Reviews</h2>
-        </div>
-        <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-card w-fit">
-          <div className="grid h-12 w-12 place-items-center rounded-xl bg-primary text-xl font-bold text-white">
-            {score}
-          </div>
-          <div>
-            <div className="flex items-center gap-0.5 text-accent">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} size={14} fill="currentColor" />
-              ))}
-            </div>
-            <p className="mt-0.5 text-[11px] font-medium text-slate-500">
-              Based on {reviews.length || 1} verified review{reviews.length === 1 ? "" : "s"}
-            </p>
-          </div>
         </div>
       </div>
 
@@ -63,8 +50,8 @@ export default function Reviews({ reviews = [] }) {
                       </div>
                     </div>
                     <div className="flex items-center text-accent text-xs">
-                      {[...Array(Number(r.rating || 5))].map((_, i) => (
-                        <Star key={i} size={12} fill="currentColor" />
+                      {[...Array(5)].map((_, i) => (
+                        <span key={i} aria-hidden="true">{i < Number(r.rating || 0) ? "★" : "☆"}</span>
                       ))}
                     </div>
                   </div>
@@ -75,26 +62,25 @@ export default function Reviews({ reviews = [] }) {
 
                 {r.review_gallery?.length > 0 && (
                   <div className="mt-4 flex gap-2 overflow-x-auto pt-2 border-t border-slate-100">
-                    {r.review_gallery.map((media, i) =>
-                      media.type === "video" ? (
-                        <a
-                          className="grid h-12 w-16 flex-none place-items-center rounded-lg bg-slate-100 text-[10px] font-bold text-primary hover:bg-primary-50"
-                          href={media.url}
-                          target="_blank"
-                          rel="noreferrer"
+                    {r.review_gallery.filter((media) => media.url).map((media, i) => {
+                      const items = r.review_gallery.filter((item) => item.url);
+                      const isVideo = media.type === "video" || /\.(mp4|webm|mov)(?:$|[?#])/i.test(media.url);
+                      return (
+                        <button
+                          type="button"
+                          className="relative h-12 w-16 flex-none overflow-hidden rounded-lg border border-slate-200 bg-slate-100"
+                          onClick={() => setSelectedMedia({ items, index: i })}
+                          aria-label={isVideo ? "View review video" : "View review photo"}
                           key={media.id || i}
                         >
-                          ▶ Video
-                        </a>
-                      ) : (
-                        <img
-                          className="h-12 w-16 flex-none rounded-lg object-cover border border-slate-200"
-                          src={media.url}
-                          alt={media.alt || "Review photo"}
-                          key={media.id || i}
-                        />
-                      )
-                    )}
+                          {isVideo ? (
+                            <span className="grid h-full place-items-center text-[10px] font-bold text-primary">▶ Video</span>
+                          ) : (
+                            <img className="h-full w-full object-cover" src={media.url} alt={media.alt || "Review photo"} />
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </article>
@@ -102,6 +88,41 @@ export default function Reviews({ reviews = [] }) {
           })}
         </div>
       )}
+      {selectedMedia && (() => {
+        const { items, index } = selectedMedia;
+        const current = items[index];
+        const isVideo = current.type === "video" || /\.(mp4|webm|mov)(?:$|[?#])/i.test(current.url);
+        return (
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Review media viewer"
+            onClick={() => setSelectedMedia(null)}
+          >
+            <button type="button" className="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white hover:bg-white/20" onClick={() => setSelectedMedia(null)} aria-label="Close media viewer">
+              <X size={22} />
+            </button>
+            {index > 0 && (
+              <button type="button" className="absolute left-3 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 sm:left-6" onClick={(event) => { event.stopPropagation(); setSelectedMedia((state) => ({ ...state, index: state.index - 1 })); }} aria-label="Previous media">
+                <ChevronLeft size={24} />
+              </button>
+            )}
+            <div className="flex max-h-[90vh] max-w-[90vw] items-center justify-center" onClick={(event) => event.stopPropagation()}>
+              {isVideo ? (
+                <video className="max-h-[85vh] max-w-[88vw]" src={current.url} controls autoPlay />
+              ) : (
+                <img className="max-h-[85vh] max-w-[88vw] object-contain" src={current.url} alt={current.alt || "Review media"} />
+              )}
+            </div>
+            {index < items.length - 1 && (
+              <button type="button" className="absolute right-3 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 sm:right-6" onClick={(event) => { event.stopPropagation(); setSelectedMedia((state) => ({ ...state, index: state.index + 1 })); }} aria-label="Next media">
+                <ChevronRight size={24} />
+              </button>
+            )}
+          </div>
+        );
+      })()}
     </section>
   );
 }

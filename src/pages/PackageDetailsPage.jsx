@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { useTravel } from "../contexts/TravelContext";
 import usePackages from "../hooks/usePackages";
 import Seo from "../components/Seo";
-import { addToWishlist, checkReviewEligibility, fetchReviews, fetchVariant, removeFromWishlist, submitReview } from "../api";
+import { addToWishlist, checkReviewEligibility, fetchReviews, fetchVariant, removeFromWishlist, submitReview, updateReview } from "../api";
 import {
   Heart, LoaderCircle, MapPin, Clock, Check, X as CloseIcon,
   Video, Image as ImageIcon, MessageCircle, Share2, ChevronDown, ChevronUp
@@ -23,6 +23,7 @@ export default function PackageDetailsPage() {
   const [showBannerVideo, setShowBannerVideo] = useState(false);
   const [enquiryOpen, setEnquiryOpen] = useState(false);
   const [reviewForm, setReviewForm] = useState({ rating: 5, review: "" });
+  const [editingReview, setEditingReview] = useState(false);
   const [reviewState, setReviewState] = useState({ loading: false, message: "", error: "" });
   const [reviews, setReviews] = useState([]);
   const [eligibility, setEligibility] = useState(null);
@@ -125,6 +126,10 @@ export default function PackageDetailsPage() {
             rating: r.data.review.rating || 5,
             review: r.data.review.review || "",
           });
+          setEditingReview(false);
+        } else {
+          setReviewForm({ rating: 5, review: "" });
+          setEditingReview(false);
         }
       })
       .catch(() => setEligibility(null))
@@ -190,9 +195,21 @@ export default function PackageDetailsPage() {
     try {
       const pkgId = pack.package_id || pack.id;
       const slug = pack.slug || id;
-      await submitReview({ package_id: pkgId, ...reviewForm, review: reviewForm.review.trim() });
-      setReviewForm({ rating: 5, review: "" });
-      setReviewState({ loading: false, message: "Thank you! Your review has been submitted.", error: "" });
+      if (editingReview) {
+        const existingReview = eligibility?.review;
+        if (!existingReview?.id) throw new Error("Could not find your review to update. Please refresh and try again.");
+        await updateReview(existingReview.id, {
+          ...reviewForm,
+          review: reviewForm.review.trim(),
+          review_gallery: existingReview.review_gallery || [],
+        });
+        setReviewState({ loading: false, message: "Your review has been updated.", error: "" });
+      } else {
+        await submitReview({ package_id: pkgId, ...reviewForm, review: reviewForm.review.trim() });
+        setReviewForm({ rating: 5, review: "" });
+        setReviewState({ loading: false, message: "Thank you! Your review has been submitted.", error: "" });
+      }
+      setEditingReview(false);
       fetchReviews(slug).then((r) => setReviews(Array.isArray(r?.data) ? r.data : [])).catch(() => {});
       checkReviewEligibility(slug).then((r) => setEligibility(r?.data || null)).catch(() => {});
     } catch (err) {
@@ -601,7 +618,7 @@ export default function PackageDetailsPage() {
                     {isMember ? (
             eligibilityLoading ? (
               <p className="mt-2 text-xs text-slate-500">Checking review eligibility...</p>
-            ) : eligibility?.has_reviewed ? (
+            ) : eligibility?.has_reviewed && !editingReview ? (
               <div className="mt-4 rounded-xl border border-emerald-100 bg-emerald-50/60 p-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-bold text-emerald-800">✓ You reviewed this tour</span>
@@ -611,8 +628,17 @@ export default function PackageDetailsPage() {
                   <p className="text-xs text-slate-700 italic">“{eligibility.review.review}”</p>
                 ) : null}
                 <p className="mt-2 text-[11px] text-slate-500">Thank you for sharing your verified feedback!</p>
+                {eligibility.review?.id && (
+                  <button
+                    type="button"
+                    className="mt-3 rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100"
+                    onClick={() => setEditingReview(true)}
+                  >
+                    Edit review
+                  </button>
+                )}
               </div>
-            ) : !eligibility?.can_review ? (
+            ) : !eligibility?.can_review && !editingReview ? (
               <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <p className="text-xs font-medium text-slate-600">You need to complete this journey to write a verified review.</p>
                 <p className="mt-1 text-[11px] text-slate-400">Reviews can be submitted once your tour package booking has been completed.</p>
@@ -647,7 +673,7 @@ export default function PackageDetailsPage() {
                 {reviewState.error && <p className="rounded-xl bg-rose-50 p-3 text-xs text-rose-600">{reviewState.error}</p>}
                 {reviewState.message && <p className="rounded-xl bg-emerald-50 p-3 text-xs text-emerald-700">{reviewState.message}</p>}
                 <button className="btn-primary rounded-xl text-xs font-bold" type="submit" disabled={reviewState.loading}>
-                  {reviewState.loading ? "Submitting..." : eligibility?.has_reviewed ? "Update Review" : "Post Review"}
+                  {reviewState.loading ? (editingReview ? "Updating..." : "Submitting...") : editingReview ? "Update Review" : "Post Review"}
                 </button>
               </form>
             )
