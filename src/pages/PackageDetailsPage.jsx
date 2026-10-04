@@ -582,9 +582,15 @@ export default function PackageDetailsPage() {
             {rulesRegulations.map((rule) => (
               <article key={rule.id} className="card p-5">
                 <h3 className="font-display text-sm font-bold text-navy">{rule.rule_title}</h3>
-                {rule.regulations && (
+                {Array.isArray(rule.regulations) ? (
+                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed text-slate-600">
+                    {rule.regulations.map((regulation, index) => (
+                      <li key={`${rule.id}-regulation-${index}`}>{regulation}</li>
+                    ))}
+                  </ul>
+                ) : rule.regulations ? (
                   <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-600">{rule.regulations}</p>
-                )}
+                ) : null}
               </article>
             ))}
           </div>

@@ -618,7 +618,11 @@ export async function fetchRulesRegulations(type) {
     .map((rule) => ({
       ...rule,
       rule_title: displayText(rule?.rule_title),
-      regulations: displayText(rule?.regulations),
+      regulations: Array.isArray(rule?.regulations)
+        ? rule.regulations.map(displayText).filter(Boolean)
+        : Array.isArray(rule?.regulations?.items)
+          ? rule.regulations.items.map(displayText).filter(Boolean)
+          : displayText(rule?.regulations),
     }));
 }
 
