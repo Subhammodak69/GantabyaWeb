@@ -90,7 +90,7 @@ function cookieVisitorId() {
   const entry = document.cookie
     .split("; ")
     .find((cookie) => cookie.startsWith(`${VISITOR_COOKIE}=`));
-  const id = entry ? decodeURIComponent(entry.slice(VISITOR_COOKIE.length + 1)) : "";
+  const id = entry ? entry.slice(VISITOR_COOKIE.length + 1) : "";
   return isValidUUID(id) ? id : "";
 }
 
@@ -121,7 +121,7 @@ export function visitorSessionId() {
 }
 
 async function authVisitorId() {
-  let id = visitorId();
+  let id = cookieVisitorId() || storage.getItem(VISITOR_SERVER_ID);
   if (!id || !isValidUUID(id)) id = await identifyVisitor();
   return (id && isValidUUID(id)) ? id : "";
 }
@@ -402,7 +402,7 @@ export async function uploadFile(file){
 }
 function clientFingerprint(){let value=storage.getItem("@cobtravels/fingerprint");if(!value){value=`web-${Date.now()}-${Math.random().toString(36).slice(2,14)}`;storage.setItem("@cobtravels/fingerprint",value)}return value;}
 function clientDetails(){const ua=navigator.userAgent||"";const browser=/Edg\//.test(ua)?"Edge":/Chrome\//.test(ua)?"Chrome":/Firefox\//.test(ua)?"Firefox":/Safari\//.test(ua)?"Safari":"Other";const os=/Windows/.test(ua)?"Windows":/Mac OS/.test(ua)?"macOS":/Android/.test(ua)?"Android":/iPhone|iPad/.test(ua)?"iOS":"Other";return {browser,os,device:/Mobi|Android|iPhone|iPad/.test(ua)?"mobile":"desktop"};}
-export async function identifyVisitor(customerId=""){try{const existingId=visitorId();if(existingId)return existingId;const d=clientDetails();const payload={fingerprint:clientFingerprint(),ip_address:"",country:"",state:"",city:"",browser:d.browser,os:d.os,device:d.device};if(customerId)payload.customer_id=customerId;const r=await request("/api/v1/visitors/identify",{method:"POST",body:JSON.stringify(payload)});const id=r?.data?.id||r?.data?.visitor?.id||r?.data?.visitor?.visitor_id||r?.data?.visitor_id;if(id&&isValidUUID(id)){persistVisitorId(id);return id;}return visitorId()||null;}catch{return null;}}
+export async function identifyVisitor(customerId=""){try{const existingId=cookieVisitorId()||storage.getItem(VISITOR_SERVER_ID);if(existingId&&isValidUUID(existingId)){persistVisitorId(existingId);return existingId;}const d=clientDetails();const payload={fingerprint:clientFingerprint(),ip_address:"",country:"",state:"",city:"",browser:d.browser,os:d.os,device:d.device};if(customerId)payload.customer_id=customerId;const r=await request("/api/v1/visitors/identify",{method:"POST",body:JSON.stringify(payload)});const id=r?.data?.id||r?.data?.visitor?.id||r?.data?.visitor?.visitor_id||r?.data?.visitor_id;if(id&&isValidUUID(id)){persistVisitorId(id);return id;}return visitorId()||null;}catch{return null;}}
 export async function startVisitorSession(landingPage=window.location.pathname){const visitor=visitorId();if(!visitor)return null;try{const r=await request("/api/v1/visitors/sessions/start",{method:"POST",body:JSON.stringify({visitor_id:visitor,landing_page:landingPage,referrer:document.referrer||"",utm_source:"",utm_medium:"",utm_campaign:"",utm_term:""})});const id=r?.data?.id;if(id)storage.setItem(VISITOR_SESSION_ID,id);return id||null;}catch{return null;}}
 export async function heartbeatVisitorSession(currentPage=window.location.pathname,pageViewsDelta=1){const id=storage.getItem(VISITOR_SESSION_ID);if(!id)return null;try{const r=await request(`/api/v1/visitors/sessions/${encodeURIComponent(id)}/heartbeat`,{method:"POST",body:JSON.stringify({current_page:currentPage,page_views_delta:pageViewsDelta})});return r?.data||null;}catch{return null;}}
 export async function endVisitorSession(exitPage=window.location.pathname){const id=storage.getItem(VISITOR_SESSION_ID);if(!id)return null;storage.removeItem(VISITOR_SESSION_ID);try{const r=await request(`/api/v1/visitors/sessions/${encodeURIComponent(id)}/end`,{method:"POST",body:JSON.stringify({exit_page:exitPage}),keepalive:true});return r?.data||null;}catch{return null;}}

@@ -3,12 +3,6 @@ import { useState } from "react";
 
 export default function Reviews({ reviews = [] }) {
   const [selectedMedia, setSelectedMedia] = useState(null);
-  const score = reviews.length
-    ? (reviews.reduce((sum, item) => {
-        const review = Array.isArray(item) ? { rating: item[1] } : item;
-        return sum + Number(review.rating || 0);
-      }, 0) / reviews.length).toFixed(1)
-    : "0.0";
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
