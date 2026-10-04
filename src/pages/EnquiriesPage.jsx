@@ -368,7 +368,11 @@ export default function EnquiriesPage() {
                   {/* Footer */}
                   <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-[11px] text-slate-400">
                     <span>Submitted {formatDate(item.created_at)}</span>
-                    <div className="flex items-center gap-3">{item.enquirer_phone && <span className="font-semibold text-slate-700">📞 {item.enquirer_phone}</span>}<button type="button" onClick={() => startEdit(item)} className="font-bold text-primary hover:underline">Edit</button><button type="button" onClick={() => removeItem(item)} className="font-bold text-rose-600 hover:underline">Delete</button></div>
+                    <div className="flex items-center gap-3">
+                      <Link to={`/my-enquiries/${encodeURIComponent(item.id)}`} className="font-bold text-primary hover:underline">View details</Link>
+                      <button type="button" onClick={() => startEdit(item)} className="font-bold text-slate-600 hover:underline">Edit</button>
+                      <button type="button" onClick={() => removeItem(item)} className="font-bold text-rose-600 hover:underline">Delete</button>
+                    </div>
                   </div>
                 </article>
               );

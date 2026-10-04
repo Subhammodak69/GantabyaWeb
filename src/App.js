@@ -10,6 +10,7 @@ import ProfilePage from "./pages/ProfilePage";
 import AuthPage from "./pages/AuthPage";
 import CustomTourEnquiryPage from "./pages/CustomTourEnquiryPage";
 import EnquiriesPage from "./pages/EnquiriesPage";
+import EnquiryDetailsPage from "./pages/EnquiryDetailsPage";
 import TripsPage from "./pages/TripsPage";
 import DocumentsPage from "./pages/DocumentsPage";
 import WishlistPage from "./pages/WishlistPage";
@@ -181,6 +182,7 @@ function AppRoutes() {
           }
         />
         <Route path="/my-enquiries" element={<ProtectedRoute><Layout><EnquiriesPage /></Layout></ProtectedRoute>} />
+        <Route path="/my-enquiries/:enquiryId" element={<ProtectedRoute><Layout><EnquiryDetailsPage /></Layout></ProtectedRoute>} />
         <Route path="/my-trips" element={<ProtectedRoute><Layout><TripsPage /></Layout></ProtectedRoute>} />
         <Route path="/documents" element={<ProtectedRoute><Layout><DocumentsPage /></Layout></ProtectedRoute>} />
         <Route path="/bills-invoices" element={<ProtectedRoute><Layout><InvoicesPage /></Layout></ProtectedRoute>} />
