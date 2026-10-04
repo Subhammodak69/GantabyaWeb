@@ -10,10 +10,32 @@ import { X } from "lucide-react";
 const MEAL_OPTIONS = ["ANY", ...Object.values(enums.MealPlan)];
 const INITIAL = {
   name: "", mobile: "", email: "", channel: "WEBSITE", subject: "", message: "", variant_id: "", travel_date: "",
-  travel_duration_day: 0, travel_duration_night: 0, adult_count: 1, child_count: 0, senior_count: 0,
+  adult_count: 1, child_count: 0, senior_count: 0,
   hotel_id: "", vehicle_id: "", room_count: 0, vehicle_count: 0, budget_min: 0, budget_max: 0,
   special_requirements: "", meal_plan: "ANY",
 };
+
+function numericDuration(value) {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim() !== "" && Number.isFinite(Number(value))) return Number(value);
+  if (Array.isArray(value)) return numericDuration(value[0]);
+  if (value && typeof value === "object") {
+    for (const key of ["value", "count", "duration", "items"]) {
+      const result = numericDuration(value[key]);
+      if (result !== null) return result;
+    }
+  }
+  return null;
+}
+
+function variantDuration(variant, field, fallback, suffix) {
+  if (!variant) return numericDuration(fallback) ?? 0;
+  const value = numericDuration(variant[field]);
+  if (value !== null) return value;
+  const duration = typeof variant.duration === "string" ? variant.duration : "";
+  const match = duration.match(new RegExp(`(\\d+)\\s*${suffix}\\b`, "i"));
+  return match ? Number(match[1]) : 0;
+}
 
 export default function EnquiryModal({
   open,
@@ -24,10 +46,15 @@ export default function EnquiryModal({
   packageTitle = "",
   destinationId = "",
   travelDate = "",
+  durationDays = 0,
+  durationNights = 0,
 }) {
   const { user } = useTravel();
   const [form, setForm] = useState(INITIAL);
   const [variants, setVariants] = useState([]);
+  const selectedVariant = variants.find((variant) => variant.id === form.variant_id);
+  const travelDurationDay = variantDuration(selectedVariant, "duration_days", durationDays, "D");
+  const travelDurationNight = variantDuration(selectedVariant, "duration_nights", durationNights, "N");
   const [hotels, setHotels] = useState([]);
   const [vehicles, setVehicles] = useState([]);
   const [facilitiesLoading, setFacilitiesLoading] = useState(false);
@@ -96,8 +123,6 @@ export default function EnquiryModal({
         message: "",
         variant_id: variantId || "",
         travel_date: travelDate || "",
-        travel_duration_day: 0,
-        travel_duration_night: 0,
         adult_count: 1,
         child_count: 0,
         senior_count: 0,
@@ -158,8 +183,8 @@ export default function EnquiryModal({
         mobile: form.mobile,
         email: form.email,
         travel_date: form.travel_date,
-        travel_duration_day: form.travel_duration_day,
-        travel_duration_night: form.travel_duration_night,
+        travel_duration_day: travelDurationDay,
+        travel_duration_night: travelDurationNight,
         adult_count: form.adult_count,
         child_count: form.child_count,
         senior_count: form.senior_count,
@@ -276,11 +301,11 @@ export default function EnquiryModal({
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-700" htmlFor="enq-days">Travel Duration (Days)</label>
-                  <input id="enq-days" type="text" inputMode="numeric" pattern="[0-9]*" value={form.travel_duration_day} onChange={setNumber("travel_duration_day")} className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs outline-none transition focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20" />
+                  <input id="enq-days" type="number" value={travelDurationDay} readOnly className="h-10 w-full cursor-not-allowed rounded-xl border border-slate-200 bg-slate-100 px-3 text-xs text-slate-600 outline-none" />
                 </div>
                 <div>
                   <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-700" htmlFor="enq-nights">Travel Duration (Nights)</label>
-                  <input id="enq-nights" type="text" inputMode="numeric" pattern="[0-9]*" value={form.travel_duration_night} onChange={setNumber("travel_duration_night")} className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs outline-none transition focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20" />
+                  <input id="enq-nights" type="number" value={travelDurationNight} readOnly className="h-10 w-full cursor-not-allowed rounded-xl border border-slate-200 bg-slate-100 px-3 text-xs text-slate-600 outline-none" />
                 </div>
               </div>
 

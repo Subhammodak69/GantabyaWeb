@@ -1,6 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { deleteEnquiry, fetchEnquiries, updateEnquiry } from "../api";
+import {
+  deleteEnquiry,
+  fetchDestinations,
+  fetchEnquiries,
+  fetchHotels,
+  fetchPackages,
+  fetchPackageVariants,
+  fetchVehicles,
+  updateEnquiry,
+} from "../api";
 import CustomSelect from "../components/CustomSelect";
 import CustomDatePicker from "../components/CustomDatePicker";
 import { LoaderCircle, MessageSquareText, X } from "lucide-react";
@@ -15,6 +24,14 @@ function formatDate(value) {
         month: "short",
         year: "numeric",
       });
+}
+
+function getLookupItems(response) {
+  const data = response?.data;
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.items)) return data.items;
+  if (Array.isArray(data?.results)) return data.results;
+  return [];
 }
 
 const STATUS_THEMES = {
@@ -34,6 +51,15 @@ export default function EnquiriesPage() {
   const [editing, setEditing] = useState(null);
   const [editForm, setEditForm] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [lookupOptions, setLookupOptions] = useState({
+    packages: [],
+    variants: [],
+    destinations: [],
+    hotels: [],
+    vehicles: [],
+  });
+  const [lookupsLoading, setLookupsLoading] = useState(false);
+  const [lookupError, setLookupError] = useState("");
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -48,6 +74,8 @@ export default function EnquiriesPage() {
 
   const startEdit = (item) => {
     setEditing(item);
+    setLookupError("");
+    setLookupOptions((current) => ({ ...current, variants: [] }));
     setEditForm({
       name: item.enquirer_name || "", phone: item.enquirer_phone || "", email: item.enquirer_email || "", travel_date: item.travel_date || "",
       package_id: item.package_id || "", variant_id: item.variant_id || "", destination_id: item.destination_id || "",
@@ -59,6 +87,107 @@ export default function EnquiriesPage() {
       message: item.message || "", special_requirements: item.special_requirements || "", meal_plan: item.meal_plan || "ANY",
     });
   };
+
+  useEffect(() => {
+    if (!editing) return undefined;
+    let active = true;
+    setLookupsLoading(true);
+
+    Promise.allSettled([
+      fetchPackages({ page: 1, page_size: 100 }),
+      fetchDestinations(1, 100),
+      fetchHotels(1, 100),
+      fetchVehicles(1, 100),
+    ]).then(([packagesResult, destinationsResult, hotelsResult, vehiclesResult]) => {
+      if (!active) return;
+      const failedLookups = [
+        packagesResult,
+        destinationsResult,
+        hotelsResult,
+        vehiclesResult,
+      ].filter((result) => result.status === "rejected");
+      if (failedLookups.length) {
+        setLookupError("Some related options could not be loaded. Close and reopen the form to retry.");
+      }
+      setLookupOptions((current) => ({
+        ...current,
+        packages: packagesResult.status === "fulfilled" ? packagesResult.value.items : [],
+        destinations: destinationsResult.status === "fulfilled" ? destinationsResult.value.items : [],
+        hotels: hotelsResult.status === "fulfilled" ? getLookupItems(hotelsResult.value) : [],
+        vehicles: vehiclesResult.status === "fulfilled" ? getLookupItems(vehiclesResult.value) : [],
+      }));
+      setLookupsLoading(false);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [editing]);
+
+  useEffect(() => {
+    if (!editing || !editForm?.package_id) {
+      setLookupOptions((current) => ({ ...current, variants: [] }));
+      return undefined;
+    }
+    if (lookupsLoading) return undefined;
+
+    const selectedPackage = lookupOptions.packages.find((item) =>
+      String(item.id) === String(editForm.package_id) ||
+      String(item.package_id) === String(editForm.package_id)
+    );
+    const packageRef = selectedPackage?.slug || selectedPackage?.id || editForm.package_id;
+    let active = true;
+
+    fetchPackageVariants(packageRef)
+      .then((result) => {
+        if (active) {
+          setLookupOptions((current) => ({ ...current, variants: result.items || [] }));
+        }
+      })
+      .catch((error) => {
+        if (active) {
+          setLookupOptions((current) => ({ ...current, variants: [] }));
+          setLookupError(error.message || "Package variants could not be loaded.");
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [editing, editForm?.package_id, lookupsLoading, lookupOptions.packages]);
+
+  const optionsWithCurrent = (records, id, getLabel, fallback) => {
+    const options = records
+      .filter((record) => record?.id || record?.package_id)
+      .map((record) => ({
+        label: getLabel(record) || "Unnamed item",
+        value: record.package_id || record.id,
+      }));
+    if (id && !options.some((option) => String(option.value) === String(id))) {
+      options.unshift({ label: fallback || "Previously selected item", value: id });
+    }
+    return options;
+  };
+
+  const selectEditField = (key, label, options, placeholder) => (
+    <label key={key} className="text-xs font-bold text-slate-600">
+      {label}
+      <CustomSelect
+        value={editForm[key]}
+        options={options}
+        onChange={(value) => {
+          setEditForm((current) => ({
+            ...current,
+            [key]: value,
+            ...(key === "package_id" ? { variant_id: "" } : {}),
+          }));
+        }}
+        triggerClassName="mt-1 h-10"
+        placeholder={placeholder}
+        disabled={lookupsLoading || (key === "variant_id" && !editForm.package_id)}
+      />
+    </label>
+  );
 
   const saveEdit = async (event) => {
     event.preventDefault();
@@ -256,21 +385,21 @@ export default function EnquiriesPage() {
                 <X size={18} />
               </button>
             </div>
+            {lookupError && (
+              <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-medium text-amber-800" role="status">
+                {lookupError}
+              </p>
+            )}
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               {[
                 ["name", "Full name", "text"],
                 ["phone", "Phone", "tel"],
                 ["email", "Email", "email"],
-                ["package_id", "Package ID", "text"],
-                ["variant_id", "Variant ID", "text"],
-                ["destination_id", "Destination ID", "text"],
                 ["travel_duration_day", "Duration (days)", "number"],
                 ["travel_duration_night", "Duration (nights)", "number"],
                 ["adult_count", "Adults", "number"],
                 ["child_count", "Children", "number"],
                 ["senior_count", "Seniors", "number"],
-                ["hotel_id", "Hotel ID", "text"],
-                ["vehicle_id", "Vehicle ID", "text"],
                 ["room_count", "Rooms", "number"],
                 ["vehicle_count", "Vehicles", "number"],
                 ["budget_min", "Minimum budget", "number"],
@@ -294,6 +423,61 @@ export default function EnquiriesPage() {
                   />
                 </label>
               ))}
+              {selectEditField(
+                "package_id",
+                "Package",
+                optionsWithCurrent(
+                  lookupOptions.packages,
+                  editForm.package_id,
+                  (item) => item.title || item.destination,
+                  editing.tourTitle || editing.package_name || editing.package?.title || editing.package?.name,
+                ),
+                lookupsLoading ? "Loading packages..." : "Select package",
+              )}
+              {selectEditField(
+                "variant_id",
+                "Variant",
+                optionsWithCurrent(
+                  lookupOptions.variants,
+                  editForm.variant_id,
+                  (item) => item.name || item.season_name,
+                  editing.variantName || editing.variant_name || editing.variant?.name,
+                ),
+                !editForm.package_id ? "Select a package first" : "Select variant",
+              )}
+              {selectEditField(
+                "destination_id",
+                "Destination",
+                optionsWithCurrent(
+                  lookupOptions.destinations,
+                  editForm.destination_id,
+                  (item) => item.name || item.destination_name,
+                  editing.destination_name || editing.destination,
+                ),
+                lookupsLoading ? "Loading destinations..." : "Select destination",
+              )}
+              {selectEditField(
+                "hotel_id",
+                "Hotel",
+                optionsWithCurrent(
+                  lookupOptions.hotels,
+                  editForm.hotel_id,
+                  (item) => item.name || item.hotel_name || item.title,
+                  editing.hotel_name || editing.hotel?.name,
+                ),
+                lookupsLoading ? "Loading hotels..." : "Select hotel",
+              )}
+              {selectEditField(
+                "vehicle_id",
+                "Vehicle",
+                optionsWithCurrent(
+                  lookupOptions.vehicles,
+                  editForm.vehicle_id,
+                  (item) => item.name || item.vehicle_name || item.title,
+                  editing.vehicle_name || editing.vehicle?.name,
+                ),
+                lookupsLoading ? "Loading vehicles..." : "Select vehicle",
+              )}
               <label className="text-xs font-bold text-slate-600">
                 Travel date
                 <CustomDatePicker

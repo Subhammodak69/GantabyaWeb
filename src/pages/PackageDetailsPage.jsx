@@ -792,6 +792,8 @@ export default function PackageDetailsPage() {
         packageTitle={pack.title}
         destinationId={pack.destination_id || ""}
         travelDate={selectedDepartureDate?.departure_date || selectedDepartureDate?.date || active?.dates?.[0]?.date || ""}
+        durationDays={active?.duration_days || 0}
+        durationNights={active?.duration_nights || 0}
       />
     </div>
   );
