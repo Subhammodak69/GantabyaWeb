@@ -2,6 +2,7 @@ export const BASE_API = "https://api.gantabyaa.in";
 const VISITOR = "@cobtravels/visitor_id";
 const VISITOR_SERVER_ID = "@cobtravels/visitor_server_id";
 const VISITOR_SESSION_ID = "@cobtravels/visitor_session_id";
+const REFRESH_TOKEN = "@cobtravels/refresh_token";
 const REFERRAL_CODE = "@cobtravels/referral_code";
 const storage = window.localStorage;
 
@@ -82,6 +83,7 @@ export async function captureReferralFromUrl(value) {
 
 export function clearTokens() {
   accessToken = null;
+  storage.removeItem(REFRESH_TOKEN);
 }
 
 const VISITOR_COOKIE = "gantabyaa_visitor_id";
@@ -139,16 +141,31 @@ function extractToken(x) {
   );
 }
 
+function extractRefreshToken(x) {
+  return (
+    x?.data?.refresh_token ||
+    x?.refresh_token ||
+    x?.data?.refreshToken ||
+    x?.refreshToken ||
+    null
+  );
+}
+
 export function saveTokens(x) {
   const token = extractToken(x);
+  const refreshToken = extractRefreshToken(x);
   if (token) {
     accessToken = token;
   }
-  return { access: accessToken };
+  if (refreshToken) {
+    storage.setItem(REFRESH_TOKEN, refreshToken);
+  }
+  return { access: accessToken, refresh: refreshToken };
 }
 
 export async function refreshAccessToken() {
   if (!refreshPromise) {
+    const refreshToken = storage.getItem(REFRESH_TOKEN);
     refreshPromise = fetch(`${BASE_API}/api/v1/sessions/refresh`, {
       method: "POST",
       credentials: "include",
@@ -156,17 +173,22 @@ export async function refreshAccessToken() {
         Accept: "application/json",
         "Content-Type": "application/json",
       },
+      body: JSON.stringify({ refresh_token: refreshToken || "" }),
     })
       .then(async (response) => {
-        if (!response.ok) {
-          throw new Error("AUTH_SESSION_INVALID");
-        }
         const body = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(body.message || "AUTH_SESSION_INVALID");
+        }
         const token = extractToken(body);
         if (!token) {
-          throw new Error("AUTH_TOKEN_MISSING");
+          throw new Error(body.message || "AUTH_TOKEN_MISSING");
         }
         accessToken = token;
+        const nextRefreshToken = extractRefreshToken(body);
+        if (nextRefreshToken) {
+          storage.setItem(REFRESH_TOKEN, nextRefreshToken);
+        }
         return token;
       })
       .catch((err) => {
@@ -192,7 +214,7 @@ export async function refreshSession() {
   }
 }
 
-async function request(path, options = {}, isRetry = false) {
+async function requestWithRetry(path, options = {}, isRetry = false) {
   const isAuthSessionReq =
     path.includes("/sessions/refresh") ||
     path.includes("/sessions/logout") ||
@@ -216,7 +238,7 @@ async function request(path, options = {}, isRetry = false) {
   if (res.status === 401 && !isAuthSessionReq && !isPublicReferralReq && !isRetry) {
     try {
       await refreshAccessToken();
-      return await request(path, options, true);
+      return await requestWithRetry(path, options, true);
     } catch {
       const body = await res.json().catch(() => ({}));
       throw new Error(body.message || "Unauthorized");
@@ -233,6 +255,10 @@ async function request(path, options = {}, isRetry = false) {
   const body = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(body.message || `Request failed (${res.status})`);
   return body;
+}
+
+function request(path, options = {}) {
+  return requestWithRetry(path, options);
 }
 
 export async function requestOtp(identifier, purpose = "LOGIN") {
