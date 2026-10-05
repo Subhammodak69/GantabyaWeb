@@ -211,8 +211,6 @@ export default function ToursExplorePage() {
                   value={`${sortByParam}_${sortOrderParam}`}
                   options={[
                     { label: "Newest First", value: "created_at_desc" },
-                    { label: "Price: Low to High", value: "price_asc" },
-                    { label: "Price: High to Low", value: "price_desc" },
                     { label: "Name: A to Z", value: "title_asc" },
                   ]}
                   onChange={(val) => {
