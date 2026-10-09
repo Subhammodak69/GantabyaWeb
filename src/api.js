@@ -90,9 +90,15 @@ const VISITOR_COOKIE = "gantabyaa_visitor_id";
 
 function cookieVisitorId() {
   const entry = document.cookie
-    .split("; ")
+    .split(";")
+    .map((cookie) => cookie.trim())
     .find((cookie) => cookie.startsWith(`${VISITOR_COOKIE}=`));
-  const id = entry ? entry.slice(VISITOR_COOKIE.length + 1) : "";
+  let id = entry ? entry.slice(VISITOR_COOKIE.length + 1) : "";
+  try {
+    id = decodeURIComponent(id);
+  } catch {
+    return "";
+  }
   return isValidUUID(id) ? id : "";
 }
 
