@@ -12,6 +12,7 @@ import CustomTourEnquiryPage from "./pages/CustomTourEnquiryPage";
 import EnquiriesPage from "./pages/EnquiriesPage";
 import EnquiryDetailsPage from "./pages/EnquiryDetailsPage";
 import TripsPage from "./pages/TripsPage";
+import CustomerTripDetailsPage from "./pages/CustomerTripDetailsPage";
 import DocumentsPage from "./pages/DocumentsPage";
 import WishlistPage from "./pages/WishlistPage";
 import ReferralsPage from "./pages/ReferralsPage";
@@ -184,6 +185,7 @@ function AppRoutes() {
         <Route path="/my-enquiries" element={<ProtectedRoute><Layout><EnquiriesPage /></Layout></ProtectedRoute>} />
         <Route path="/my-enquiries/:enquiryId" element={<ProtectedRoute><Layout><EnquiryDetailsPage /></Layout></ProtectedRoute>} />
         <Route path="/my-trips" element={<ProtectedRoute><Layout><TripsPage /></Layout></ProtectedRoute>} />
+        <Route path="/my-trips/:bookingId" element={<ProtectedRoute><Layout><CustomerTripDetailsPage /></Layout></ProtectedRoute>} />
         <Route path="/documents" element={<ProtectedRoute><Layout><DocumentsPage /></Layout></ProtectedRoute>} />
         <Route path="/bills-invoices" element={<ProtectedRoute><Layout><InvoicesPage /></Layout></ProtectedRoute>} />
         <Route path="/wallet" element={<ProtectedRoute><Layout><WalletPage /></Layout></ProtectedRoute>} />
