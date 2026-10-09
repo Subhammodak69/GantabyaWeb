@@ -1,26 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 import {
   Download, Eye, FileText, FolderUp, LoaderCircle, Trash2, Upload, X,
-  Shield, CreditCard, Ticket, FileCheck, CheckCircle2, Plus
+  Shield, CreditCard, CheckCircle2, Plus
 } from "lucide-react";
 import { fetchDocuments, uploadDocument, downloadDocumentFile, fetchDocumentFile, deleteDocument, uploadFile } from "../api";
 import CustomSelect from "../components/CustomSelect";
 
 const DOCUMENT_TYPES = [
   { value: "ID_PROOF", label: "ID Proof" },
-  { value: "PASSPORT", label: "Passport" },
-  { value: "VISA", label: "Visa" },
-  { value: "TICKET", label: "Travel Ticket / Flight" },
-  { value: "INSURANCE", label: "Travel Insurance" },
-  { value: "OTHER", label: "Other Documents" },
+  { value: "ADDRESS_PROOF", label: "Address Proof" },
 ];
 
 const TYPE_CONFIG = {
   ID_PROOF: { label: "ID Proof", color: "bg-blue-50 text-primary border-primary-200", icon: CreditCard },
-  PASSPORT: { label: "Passport", color: "bg-accent-50 text-accent border-accent/20", icon: Shield },
-  VISA: { label: "Visa", color: "bg-green-50 text-success border-green-200", icon: FileCheck },
-  TICKET: { label: "Ticket", color: "bg-purple-50 text-purple-700 border-purple-200", icon: Ticket },
-  INSURANCE: { label: "Insurance", color: "bg-amber-50 text-amber-800 border-amber-200", icon: Shield },
+  ADDRESS_PROOF: { label: "Address Proof", color: "bg-accent-50 text-accent border-accent/20", icon: Shield },
   OTHER: { label: "Document", color: "bg-slate-100 text-slate-700 border-slate-200", icon: FileText },
 };
 

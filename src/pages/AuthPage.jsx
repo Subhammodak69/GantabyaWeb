@@ -164,6 +164,20 @@ export default function AuthPage() {
     }
   };
 
+  const resend = async () => {
+    setBusy(true);
+    setError("");
+    try {
+      await captureReferral();
+      await requestOtp(identifier.trim(), isSignup ? "SIGNUP" : "LOGIN");
+      setOtp("");
+    } catch (e) {
+      setError(e.message || "Failed to resend OTP. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const verify = async (event) => {
     event.preventDefault();
     if (!otp.trim()) return setError("Enter the OTP sent to you.");
@@ -312,18 +326,31 @@ export default function AuthPage() {
           </button>
 
           {sent && (
-            <button
-              className="self-center text-xs font-semibold text-primary hover:underline"
-              type="button"
-              onClick={() => {
-                setSent(false);
-                setOtp("");
-                setError("");
-              }}
-              disabled={busy}
-            >
-              ← Change Mobile / Email
-            </button>
+            <div className="flex flex-col items-center gap-2">
+              <button
+                className="text-xs font-semibold text-primary hover:underline disabled:cursor-wait disabled:opacity-60"
+                type="button"
+                onClick={() => {
+                  setSent(false);
+                  setOtp("");
+                  setError("");
+                }}
+                disabled={busy}
+              >
+                ← Change Mobile / Email
+              </button>
+              <p className="text-xs text-slate-500">
+                Didn&apos;t receive the code?{" "}
+                <button
+                  className="font-semibold text-primary hover:underline disabled:cursor-wait disabled:opacity-60"
+                  type="button"
+                  onClick={resend}
+                  disabled={busy}
+                >
+                  {busy ? "Sending..." : "Resend OTP"}
+                </button>
+              </p>
+            </div>
           )}
 
           {error && <p className="rounded-xl bg-rose-50 p-3 text-xs text-rose-600 font-medium" role="alert">{error}</p>}

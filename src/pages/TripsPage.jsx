@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { addCustomerTourTraveller, deleteCustomerTourTraveller, fetchCustomerTour, fetchCustomerTours, updateCustomerTourTraveller } from "../api";
-import { Calendar, ChevronRight, LoaderCircle, Plane, Plus, Trash2, Users, X } from "lucide-react";
+import { addCustomerTourTraveller, deleteCustomerTourTraveller, downloadDocumentFile, fetchBookingDocuments, fetchCustomerTour, fetchCustomerTours, fetchDocumentFile, updateCustomerTourTraveller } from "../api";
+import { Calendar, ChevronRight, Download, Eye, FileText, LoaderCircle, Plane, Plus, Trash2, Users, X } from "lucide-react";
 
 function formatDate(value) {
   const d = new Date(value);
@@ -25,6 +25,14 @@ export default function TripsPage() {
   const [travellerOpen, setTravellerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [bookingDocuments, setBookingDocuments] = useState([]);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
+  const [bookingPreview, setBookingPreview] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  useEffect(() => () => {
+    if (bookingPreview?.url) URL.revokeObjectURL(bookingPreview.url);
+  }, [bookingPreview]);
 
   const loadTrips = async () => {
     setLoading(true);
@@ -41,12 +49,47 @@ export default function TripsPage() {
   useEffect(() => { loadTrips(); }, []);
 
   const openTour = async (tour) => {
-    setSelectedTour(tour); setDetailLoading(true); setError("");
+    setSelectedTour(tour); setDetailLoading(true); setDocumentsLoading(true); setBookingDocuments([]); setError("");
     try {
       const detail = unwrapTour(await fetchCustomerTour(tour.id));
       if (detail) setSelectedTour(detail);
+      const response = await fetchBookingDocuments(tour.id);
+      setBookingDocuments(Array.isArray(response?.data) ? response.data : []);
     } catch (err) { setError(err.message || "Unable to load booking details."); }
-    finally { setDetailLoading(false); }
+    finally { setDetailLoading(false); setDocumentsLoading(false); }
+  };
+
+  const previewBookingDocument = async (doc) => {
+    setPreviewLoading(true);
+    setError("");
+    try {
+      const { blob, fileName, mimeType } = await fetchDocumentFile(doc.file_url, {
+        fileName: doc.file_name || doc.title || "document",
+        mimeType: doc.mime_type || "",
+      });
+      setBookingPreview({ url: URL.createObjectURL(blob), fileName, mimeType });
+    } catch (err) {
+      setError(err.message || "Unable to open booking document.");
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const downloadBookingDocument = async (doc) => {
+    try {
+      const { blob, fileName } = await downloadDocumentFile(doc.id, {
+        fileName: doc.file_name || doc.title || "document",
+        mimeType: doc.mime_type || "",
+      });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = fileName || doc.file_name || "document";
+      anchor.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      setError(err.message || "Unable to download booking document.");
+    }
   };
 
   const openTraveller = (item = null) => {
@@ -127,11 +170,56 @@ export default function TripsPage() {
                       </div>
                     )) : <p className="py-4 text-sm text-slate-500">No travellers added yet.</p>}
                   </div>
+                  <div className="mt-7">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="font-display text-lg font-bold text-navy">Booking documents</h3>
+                      <span className="rounded-full bg-primary-50 px-2.5 py-1 text-[10px] font-bold text-primary">{bookingDocuments.length}</span>
+                    </div>
+                    {documentsLoading ? (
+                      <div className="flex justify-center p-6"><LoaderCircle className="animate-spin text-primary" size={20} /></div>
+                    ) : bookingDocuments.length ? (
+                      <div className="mt-2 divide-y divide-slate-100">
+                        {bookingDocuments.map((doc) => (
+                          <div key={doc.id} className="flex items-center gap-3 py-3">
+                            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary-50 text-primary"><FileText size={16} /></span>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-bold text-navy">{doc.title || doc.file_name || "Booking document"}</p>
+                              <p className="text-xs text-slate-500">{(doc.document_type || "DOCUMENT").replaceAll("_", " ")}{doc.uploaded_at ? ` · ${formatDate(doc.uploaded_at)}` : ""}</p>
+                            </div>
+                            <button type="button" onClick={() => previewBookingDocument(doc)} disabled={previewLoading} className="rounded-lg p-2 text-primary hover:bg-primary-50 disabled:opacity-50" aria-label={`View ${doc.title || "document"}`} title="View document">
+                              {previewLoading ? <LoaderCircle size={16} className="animate-spin" /> : <Eye size={16} />}
+                            </button>
+                            <button type="button" onClick={() => downloadBookingDocument(doc)} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label={`Download ${doc.title || "document"}`} title="Download document"><Download size={16} /></button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : <p className="mt-2 rounded-xl border border-dashed border-slate-200 p-4 text-center text-sm text-slate-500">No documents are available for this booking yet.</p>}
+                  </div>
                 </>
               )}
             </div>
             <div className="flex shrink-0 justify-end border-t border-slate-100 bg-slate-50 px-5 py-4 sm:px-6">
               <button type="button" onClick={() => setSelectedTour(null)} className="btn-ghost text-xs font-semibold">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {bookingPreview && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/80 p-4" onMouseDown={(event) => event.target === event.currentTarget && setBookingPreview(null)}>
+          <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
+              <div className="min-w-0"><p className="text-[10px] font-bold uppercase tracking-wider text-primary">Booking document</p><p className="truncate text-sm font-semibold text-navy">{bookingPreview.fileName}</p></div>
+              <button type="button" onClick={() => setBookingPreview(null)} className="rounded-full bg-slate-100 p-2 text-slate-600" aria-label="Close document preview"><X size={18} /></button>
+            </div>
+            <div className="flex min-h-[50vh] flex-1 items-center justify-center overflow-auto bg-slate-900 p-3">
+              {bookingPreview.mimeType.includes("pdf") || bookingPreview.fileName.toLowerCase().endsWith(".pdf")
+                ? <iframe title={bookingPreview.fileName} src={bookingPreview.url} className="h-[75vh] w-full rounded-lg bg-white" />
+                : bookingPreview.mimeType.startsWith("image/")
+                  ? <img src={bookingPreview.url} alt={bookingPreview.fileName} className="max-h-[75vh] max-w-full object-contain" />
+                  : bookingPreview.mimeType.startsWith("video/")
+                    ? <video src={bookingPreview.url} controls className="max-h-[75vh] max-w-full" />
+                    : <p className="text-sm text-white">Preview is not available for this file type. Use Download to save it.</p>}
             </div>
           </div>
         </div>

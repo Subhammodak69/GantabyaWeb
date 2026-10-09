@@ -367,6 +367,14 @@ export async function fetchInvoices(page = 1, pageSize = 100) {
   }));
 }
 export function fetchDocuments(page = 1, pageSize = 50) { return request(`/api/v1/documents?page=${page}&page_size=${pageSize}`, {}, true); }
+export function fetchBookingDocuments(bookingId, page = 1, pageSize = 100) {
+  const query = new URLSearchParams({
+    booking_id: String(bookingId),
+    page: String(page),
+    page_size: String(pageSize),
+  });
+  return request(`/api/v1/documents/booking?${query.toString()}`, {}, true);
+}
 export async function uploadDocument({ file, fileUrl, documentType, title, description }) {
   let uploadedUrl = fileUrl;
   if (!uploadedUrl && file) {
