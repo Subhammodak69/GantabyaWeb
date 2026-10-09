@@ -3,7 +3,7 @@ import {
   Download, Eye, FileText, FolderUp, LoaderCircle, Trash2, Upload, X,
   Shield, CreditCard, CheckCircle2, Plus
 } from "lucide-react";
-import { fetchDocuments, uploadDocument, downloadDocumentFile, fetchDocumentFile, deleteDocument, uploadFile } from "../api";
+import { fetchDocuments, uploadDocument, downloadDocumentFile, deleteDocument, uploadFile } from "../api";
 import CustomSelect from "../components/CustomSelect";
 
 const DOCUMENT_TYPES = [
@@ -183,7 +183,7 @@ export default function DocumentsPage() {
     setPreviewLoading(true);
     setError("");
     try {
-      const { blob, fileName, mimeType } = await fetchDocumentFile(doc.file_url, {
+      const { blob, fileName, mimeType } = await downloadDocumentFile(doc.id, {
         fileName: doc.file_name || doc.title || "document",
         mimeType: doc.mime_type || "",
       });

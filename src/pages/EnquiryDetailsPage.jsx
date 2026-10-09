@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, CalendarDays, LoaderCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, CalendarDays, FileText, LoaderCircle } from "lucide-react";
 import {
   fetchDestinations,
   fetchEnquiries,
@@ -266,6 +266,12 @@ export default function EnquiryDetailsPage() {
             <div className="flex items-center gap-2 border-t border-slate-100 pt-4 text-xs text-slate-500">
               <CalendarDays size={14} className="text-primary" /> Enquiry information as submitted
             </div>
+            <Link
+              to={`/my-enquiries/${encodeURIComponent(enquiry.id)}/quotations`}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary-50 px-4 py-3 text-sm font-bold text-primary transition hover:bg-primary-100"
+            >
+              <FileText size={17} /> View quotations <ArrowRight size={16} />
+            </Link>
           </article>
         ) : null}
       </div>

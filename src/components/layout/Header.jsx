@@ -29,7 +29,7 @@ const PROFILE_MENU = [
   { label: "Wishlist", path: "/wishlist", Icon: Heart },
   { label: "Enquiries", path: "/my-enquiries", Icon: MessageSquareText },
   { label: "Trips", path: "/my-trips", Icon: MapPinned },
-  { label: "Wallet & transactions", path: "/wallet", Icon: WalletCards },
+  { label: "Transactions", path: "/wallet", Icon: WalletCards },
   { label: "Travel points", path: "/points", Icon: Award },
 ];
 

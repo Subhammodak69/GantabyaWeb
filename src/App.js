@@ -11,6 +11,7 @@ import AuthPage from "./pages/AuthPage";
 import CustomTourEnquiryPage from "./pages/CustomTourEnquiryPage";
 import EnquiriesPage from "./pages/EnquiriesPage";
 import EnquiryDetailsPage from "./pages/EnquiryDetailsPage";
+import EnquiryQuotationsPage from "./pages/EnquiryQuotationsPage";
 import TripsPage from "./pages/TripsPage";
 import CustomerTripDetailsPage from "./pages/CustomerTripDetailsPage";
 import DocumentsPage from "./pages/DocumentsPage";
@@ -183,6 +184,7 @@ function AppRoutes() {
           }
         />
         <Route path="/my-enquiries" element={<ProtectedRoute><Layout><EnquiriesPage /></Layout></ProtectedRoute>} />
+        <Route path="/my-enquiries/:enquiryId/quotations" element={<ProtectedRoute><Layout><EnquiryQuotationsPage /></Layout></ProtectedRoute>} />
         <Route path="/my-enquiries/:enquiryId" element={<ProtectedRoute><Layout><EnquiryDetailsPage /></Layout></ProtectedRoute>} />
         <Route path="/my-trips" element={<ProtectedRoute><Layout><TripsPage /></Layout></ProtectedRoute>} />
         <Route path="/my-trips/:bookingId" element={<ProtectedRoute><Layout><CustomerTripDetailsPage /></Layout></ProtectedRoute>} />
