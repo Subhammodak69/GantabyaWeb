@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { useTravel } from "../contexts/TravelContext";
 import usePackages from "../hooks/usePackages";
 import Seo from "../components/Seo";
-import { addToWishlist, checkReviewEligibility, fetchReviews, fetchRulesRegulations, fetchVariant, removeFromWishlist, submitReview, updateReview } from "../api";
+import { addToWishlist, checkReviewEligibility, fetchReviews, fetchRulesRegulations, fetchVariant, removeFromWishlist, submitReview, trackVisitorEvent, updateReview } from "../api";
 import {
   Heart, LoaderCircle, MapPin, Clock, Check, X as CloseIcon,
   Video, Image as ImageIcon, MessageCircle, Share2, ChevronDown, ChevronUp
@@ -36,10 +36,30 @@ export default function PackageDetailsPage() {
   const [selectedDepartureDate, setSelectedDepartureDate] = useState(null);
   const [dateModalOpen, setDateModalOpen] = useState(false);
   const [shareNotice, setShareNotice] = useState("");
+  const trackedPackageId = pack?.id || id;
+  const trackedPackageSlug = pack?.slug || id;
+  const hasLoadedPackage = Boolean(pack);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [id]);
+
+  useEffect(() => {
+    if (hasLoadedPackage) {
+      trackVisitorEvent("tour_package_view", window.location.pathname, {
+        package_id: trackedPackageId,
+        slug: trackedPackageSlug,
+      });
+    }
+  }, [hasLoadedPackage, trackedPackageId, trackedPackageSlug]);
+
+  useEffect(() => {
+    if (enquiryOpen) {
+      trackVisitorEvent("enquiry_form_open", window.location.pathname, {
+        package_id: pack?.id || id,
+      });
+    }
+  }, [enquiryOpen, id, pack?.id]);
 
   useEffect(() => {
     if (pack) {
