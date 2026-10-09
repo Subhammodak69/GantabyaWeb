@@ -91,7 +91,7 @@ export default function PackageDetailsPage() {
 
   const handleShare = async () => {
     if (!pack) return;
-    const shareUrl = `${window.location.origin}/journey/${encodeURIComponent(pack.slug || id)}`;
+    const shareUrl = `${window.location.origin}/${encodeURIComponent(pack.slug || id)}`;
     const shareData = {
       title: pack.title,
       text: `Check out ${pack.title} with Gantabyaa!`,
@@ -252,7 +252,7 @@ export default function PackageDetailsPage() {
       <Seo
         title={`${pack.title} | Gantabyaa`}
         description={`${pack.title} is a curated ${pack.type === "DOMESTIC" ? "domestic" : "international"} holiday package from Gantabyaa, featuring ${pack.destination || "incredible destinations"} and custom travel experiences.`}
-        path={`/journey/${encodeURIComponent(pack.slug || id)}`}
+        path={`/${encodeURIComponent(pack.slug || id)}`}
         image={pack.image || pack.cover_image || "https://gantabyaa.com/gantabyaa_og.png"}
         robots="index,follow"
       />
@@ -534,14 +534,18 @@ export default function PackageDetailsPage() {
               <span className="grid h-6 w-6 place-items-center rounded-full bg-green-100 text-success text-xs font-bold">✓</span>
               What's Included
             </h3>
-            <ul className="space-y-2 text-xs text-slate-600">
-              {(active.inclusions || ["Hotel accommodations on twin-sharing basis", "Daily breakfast and dinner", "AC transport for sightseeing", "All state taxes and tolls", "24/7 tour assistance"]).map((item, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  <Check size={14} className="text-success mt-0.5 flex-shrink-0" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
+            {active.inclusions?.length ? (
+              <ul className="space-y-2 text-xs text-slate-600">
+                {active.inclusions.map((item, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <Check size={14} className="text-success mt-0.5 flex-shrink-0" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-xs text-slate-500">No inclusion details found yet.</p>
+            )}
           </div>
 
           {/* Exclusions */}
@@ -550,14 +554,18 @@ export default function PackageDetailsPage() {
               <span className="grid h-6 w-6 place-items-center rounded-full bg-rose-100 text-rose-500 text-xs font-bold">✕</span>
               What's Not Included
             </h3>
-            <ul className="space-y-2 text-xs text-slate-600">
-              {(active.exclusions || ["Flight or train tickets (unless specified)", "Personal expenses & tips", "Monument entry fees", "Travel insurance", "Any cost arising due to unforeseen events"]).map((item, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  <CloseIcon size={14} className="text-rose-400 mt-0.5 flex-shrink-0" />
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
+            {active.exclusions?.length ? (
+              <ul className="space-y-2 text-xs text-slate-600">
+                {active.exclusions.map((item, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <CloseIcon size={14} className="text-rose-400 mt-0.5 flex-shrink-0" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-xs text-slate-500">No exclusion details found yet.</p>
+            )}
           </div>
         </div>
       </section>

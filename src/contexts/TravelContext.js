@@ -187,7 +187,7 @@ export function TravelProvider({ children }) {
   };
   const goProfile = () => navigate("/profile");
 
-  const selectPackage = (id, packageData = null) => { setSelectedPackageId(id); setSelectedPackage(packageData); navigate(`/journey/${id}`); };
+  const selectPackage = (id, packageData = null) => { setSelectedPackageId(id); setSelectedPackage(packageData); navigate(`/${id}`); };
   const returnToJourneys = () => { setSelectedPackageId(null); setSelectedPackage(null); navigate("/"); };
 
   return (

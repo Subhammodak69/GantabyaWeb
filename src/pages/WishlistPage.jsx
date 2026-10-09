@@ -55,7 +55,7 @@ function WishlistCard({ item, onRemove }) {
             Saved {item.wishlisted_at ? new Date(item.wishlisted_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "recently"}
           </span>
           <Link 
-            to={`/journey/${item.slug || item.package_id || item.id}`} 
+            to={`/${item.slug || item.package_id || item.id}`} 
             className="inline-flex items-center gap-1 rounded-lg bg-primary-50 px-2.5 py-1 text-xs font-bold text-primary transition hover:bg-primary hover:text-white"
           >
             <span>View</span>

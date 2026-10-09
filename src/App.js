@@ -165,7 +165,7 @@ function AppRoutes() {
         <Route path="/destinations" element={<Layout><DestinationsPage /></Layout>} />
         <Route path="/destinations/:slug" element={<Layout><DestinationDetailsPage /></Layout>} />
         <Route path="/destinations/:slug/hotels/:hotelId" element={<Layout><HotelDetailsPage /></Layout>} />
-        <Route path="/journey/:id" element={<Layout><PackageDetailsPage /></Layout>} />
+        <Route path="/:id" element={<Layout><PackageDetailsPage /></Layout>} />
         <Route path="/custom-tour-enquiry" element={<Layout><CustomTourEnquiryPage /></Layout>} />
         <Route path="/contact" element={<Layout><ContactUsPage /></Layout>} />
         <Route path="/privacy-policy" element={<Layout><PrivacyPolicyPage /></Layout>} />

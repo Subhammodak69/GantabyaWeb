@@ -29,7 +29,7 @@ function normalisePackage(item) {
 
   const updatedAt = item.updated_at || item.modified_at || item.updatedAt;
   return {
-    path: `/journey/${encodeURIComponent(String(slug))}`,
+    path: `/${encodeURIComponent(String(slug))}`,
     changefreq: "weekly",
     priority: "0.8",
     ...(updatedAt ? { lastmod: new Date(updatedAt).toISOString().slice(0, 10) } : {}),
