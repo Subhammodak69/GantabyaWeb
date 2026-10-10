@@ -1,11 +1,25 @@
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { trackVisitorEvent } from "../api";
 
 export default function Reviews({ reviews = [] }) {
   const [selectedMedia, setSelectedMedia] = useState(null);
+  const sectionRef = useRef(null);
+
+  useEffect(() => {
+    if (!reviews.length || !sectionRef.current || typeof IntersectionObserver === "undefined") return undefined;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        trackVisitorEvent("review_read", window.location.pathname);
+        observer.disconnect();
+      }
+    }, { threshold: 0.2 });
+    observer.observe(sectionRef.current);
+    return () => observer.disconnect();
+  }, [reviews.length]);
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
+    <section ref={sectionRef} className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
       <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
           <p className="eyebrow">Guest Testimonials</p>
