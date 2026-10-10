@@ -488,7 +488,7 @@ function variant(v, i = 0) {
     ...v,
     id: realId || `variant-${i}`,
     variant_id: isValidUUID(realId) ? realId : undefined,
-    slug: v.slug || `variant-${i}`,
+    slug: v.slug || v.variant_slug || "",
     name: displayText(v.name || v.season_name),
     season_name: displayText(v.season_name),
     badge: displayText(v.badge),
@@ -510,11 +510,12 @@ function variant(v, i = 0) {
 }
 
 function summary(x) {
+  const packageSlug = x.slug || x.tour_slug || x.package_slug || "";
   return {
     ...x,
     package_id: x.id,
-    id: x.slug || x.id,
-    slug: x.slug || x.id,
+    id: packageSlug || x.id,
+    slug: packageSlug,
     code: x.tour_code,
     title: displayText(x.title),
     description: displayText(x.description),
@@ -584,8 +585,11 @@ export async function fetchAllDestinations(pageSize = 100) {
   return destinations;
 }
 
-export async function fetchPackageVariants(packageIdOrSlug, page = 1, pageSize = 10) {
-  const r = await request(`/api/v1/tour-packages/${encodeURIComponent(packageIdOrSlug)}/variants?page=${page}&page_size=${pageSize}`);
+export async function fetchPackageVariants(tourSlug, page = 1, pageSize = 10) {
+  if (!tourSlug || isValidUUID(tourSlug)) {
+    throw new Error("A tour slug is required to load package variants");
+  }
+  const r = await request(`/api/v1/tour-packages/${encodeURIComponent(tourSlug)}/variants?page=${page}&page_size=${pageSize}`);
   return {
     items: (Array.isArray(r.data) ? r.data : []).map(variant),
     pagination: r.pagination || {},
@@ -642,12 +646,13 @@ export async function fetchRulesRegulations(type) {
 
 export async function fetchPackage(slug, summaryData = null) {
   let d;
+  const summarySlug = summaryData?.slug || summaryData?.tour_slug || summaryData?.package_slug || "";
   if (summaryData?.package_id || summaryData?.id) {
     d = {
       ...summaryData,
       id: summaryData.package_id || summaryData.id,
       package_id: summaryData.package_id || summaryData.id,
-      slug: summaryData.slug || slug,
+      slug: summarySlug || slug,
     };
   } else {
     // The end-user API exposes package lists and variant details, not a
@@ -656,16 +661,16 @@ export async function fetchPackage(slug, summaryData = null) {
     d = await fetchPackageSummaryBySlug(slug);
   }
   if (!d) throw new Error("Tour package was not found");
-  const packageSlug = d.slug || slug;
-  const listed = await fetchPackageVariants(packageSlug).catch(() => ({ items: [] }));
-  let seasons = listed.items.length
-    ? listed.items
-    : [d.default_variant, ...(d.other_variants || [])].filter(Boolean).map(variant);
-  if (listed.items.length) {
-    const defaultVariant = listed.items.find((item) => item.is_default) || listed.items[0];
-    const detailedDefault = await fetchVariant(packageSlug, defaultVariant.slug || defaultVariant.id, listed.items).catch(() => null);
+  const packageSlug = d.slug || d.tour_slug || d.package_slug || slug;
+  const embeddedVariants = [d.default_variant, ...(d.other_variants || [])].filter(Boolean);
+  let seasons = embeddedVariants.map(variant);
+  const defaultVariant = embeddedVariants.find((item) => item.is_default) || embeddedVariants[0];
+  const defaultVariantSlug = defaultVariant?.slug || defaultVariant?.variant_slug;
+  if (defaultVariantSlug) {
+    const detailedDefault = await fetchVariant(packageSlug, defaultVariantSlug, embeddedVariants).catch(() => null);
     if (detailedDefault) {
-      seasons = [detailedDefault, ...listed.items.filter((item) => item.id !== defaultVariant.id)];
+      const responseVariants = listItems(detailedDefault.other_variants).map(variant);
+      seasons = [detailedDefault, ...responseVariants.filter((item) => item.slug !== detailedDefault.slug)];
     }
   }
   return {
@@ -689,12 +694,19 @@ export async function fetchPackage(slug, summaryData = null) {
 }
 
 export async function fetchVariant(slug, variantSlug, listedItems = null) {
-  const listed = listedItems ? { items: listedItems } : await fetchPackageVariants(slug).catch(() => ({ items: [] }));
+  const listed = listedItems ? { items: listedItems } : { items: [] };
   const listedVariant = listed.items.find((item) => item.id === variantSlug || item.slug === variantSlug || item.variant_id === variantSlug);
-  const r = await request(`/api/v1/tour-packages/${encodeURIComponent(slug)}/variants/${encodeURIComponent(listedVariant?.slug || variantSlug)}/details`);
+  const resolvedVariantSlug = listedVariant?.slug || listedVariant?.variant_slug || (isValidUUID(variantSlug) ? "" : variantSlug);
+  if (!slug || isValidUUID(slug) || !resolvedVariantSlug || isValidUUID(resolvedVariantSlug)) {
+    throw new Error("Tour and variant slugs are required to load tour details");
+  }
+  const r = await request(`/api/v1/tour-packages/${encodeURIComponent(slug)}/variants/${encodeURIComponent(resolvedVariantSlug)}/details`);
   const detail = r?.data?.variant || r?.data;
   if (!detail) throw new Error("Tour variant was not found");
-  return variant({ ...listedVariant, ...detail });
+  return {
+    ...variant({ ...listedVariant, ...detail }),
+    other_variants: r?.data?.other_variants || [],
+  };
 }
 
 export async function submitEnquiry({
