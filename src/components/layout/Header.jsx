@@ -6,6 +6,11 @@ import {
   Heart, Gift, LoaderCircle, Phone, Headphones, Menu, X,
   Search, Globe, LogOut, WalletCards
 } from "lucide-react";
+import CONTACTS from "../../config/contacts.json";
+
+const primaryPhone = CONTACTS.phones[0];
+const primaryWhatsApp = CONTACTS.whatsapp[0];
+const whatsappLink = (contact) => `https://wa.me/${contact.number.replace(/\D/g, "")}?text=${encodeURIComponent("Hello Gantabya, I need help planning a trip!")}`;
 
 function ProfileAvatar({ src }) {
   const [imageFailed, setImageFailed] = useState(false);
@@ -79,12 +84,14 @@ export default function Header() {
       <div className="bg-navy text-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-1.5 text-xs sm:px-6">
           <div className="flex items-center gap-4">
-            <a href="tel:+919932204885" className="flex items-center gap-1.5 transition hover:text-primary-200">
-              <Phone size={12} />
-              <span className="hidden sm:inline">+91 99322 04885</span>
-            </a>
+            {CONTACTS.phones.map((contact) => (
+              <a key={contact.number} href={`tel:${contact.number}`} className="flex items-center gap-1.5 transition hover:text-primary-200">
+                <Phone size={12} />
+                <span className="hidden sm:inline">{contact.display || contact.number}</span>
+              </a>
+            ))}
             <a
-              href="https://wa.me/919932204885?text=Hello%20Gantabya%2C%20I%20need%20help%20planning%20a%20trip!"
+              href={whatsappLink(primaryWhatsApp)}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 text-[#25D366] transition hover:text-[#1EBE5A]"
@@ -260,7 +267,7 @@ export default function Header() {
                   </button>
                 )}
                 <a
-                  href="https://wa.me/919932204885?text=Hello%20Gantabya%2C%20I%20need%20help%20planning%20a%20trip!"
+                  href={whatsappLink(primaryWhatsApp)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-[#25D366] transition hover:bg-green-50"
@@ -269,11 +276,11 @@ export default function Header() {
                   Chat on WhatsApp
                 </a>
                 <a
-                  href="tel:+919932204885"
+                  href={`tel:${primaryPhone?.number || ""}`}
                   className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
                 >
                   <Phone size={16} className="text-primary" />
-                  +91 99322 04885
+                  {primaryPhone?.display || primaryPhone?.number}
                 </a>
               </nav>
             </div>

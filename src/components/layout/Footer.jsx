@@ -1,5 +1,9 @@
 import { Link } from "react-router-dom";
 import { Phone, Mail, MapPin } from "lucide-react";
+import CONTACTS from "../../config/contacts.json";
+
+const primaryWhatsApp = CONTACTS.whatsapp[0];
+const whatsappLink = (contact) => `https://wa.me/${contact.number.replace(/\D/g, "")}`;
 
 const QUICK_LINKS = [
   { label: "Home", path: "/" },
@@ -52,7 +56,7 @@ export default function Footer() {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
               </a>
               <a
-                href="https://wa.me/919932204885"
+                href={whatsappLink(primaryWhatsApp)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="grid h-9 w-9 place-items-center rounded-lg bg-white/10 text-white/70 transition hover:bg-[#25D366] hover:text-white"
@@ -95,18 +99,22 @@ export default function Footer() {
           <div>
             <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-white">Get in Touch</h4>
             <ul className="space-y-3">
-              <li>
-                <a href="tel:+919932204885" className="flex items-start gap-2.5 text-sm text-white/65 transition hover:text-white">
-                  <Phone size={15} className="mt-0.5 flex-shrink-0 text-primary-300" />
-                  <span>+91 99322 04885</span>
-                </a>
-              </li>
-              <li>
-                <a href="mailto:info@coochbehartravel.com" className="flex items-start gap-2.5 text-sm text-white/65 transition hover:text-white">
-                  <Mail size={15} className="mt-0.5 flex-shrink-0 text-primary-300" />
-                  <span>info@coochbehartravel.com</span>
-                </a>
-              </li>
+              {CONTACTS.phones.map((contact) => (
+                <li key={`phone-${contact.number}`}>
+                  <a href={`tel:${contact.number}`} className="flex items-start gap-2.5 text-sm text-white/65 transition hover:text-white">
+                    <Phone size={15} className="mt-0.5 flex-shrink-0 text-primary-300" />
+                    <span>{contact.display || contact.number}</span>
+                  </a>
+                </li>
+              ))}
+              {CONTACTS.emails.map((contact) => (
+                <li key={`email-${contact.address}`}>
+                  <a href={`mailto:${contact.address}`} className="flex items-start gap-2.5 text-sm text-white/65 transition hover:text-white">
+                    <Mail size={15} className="mt-0.5 flex-shrink-0 text-primary-300" />
+                    <span>{contact.address}</span>
+                  </a>
+                </li>
+              ))}
               <li className="flex items-start gap-2.5 text-sm text-white/65">
                 <MapPin size={15} className="mt-0.5 flex-shrink-0 text-primary-300" />
                 <span>Cooch Behar, West Bengal, India</span>

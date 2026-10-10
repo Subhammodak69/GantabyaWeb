@@ -6,6 +6,12 @@ import {
 import Seo from "../components/Seo";
 import CustomSelect from "../components/CustomSelect";
 import { submitCustomEnquiry } from "../api";
+import CONTACTS from "../config/contacts.json";
+
+const primaryPhone = CONTACTS.phones[0];
+const primaryWhatsApp = CONTACTS.whatsapp[0];
+const whatsappLink = (contact, message = "Hello Gantabya, I need assistance planning a tour!") =>
+  `https://wa.me/${contact.number.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`;
 
 const ENQUIRY_TYPES = [
   { value: "GENERAL", label: "General Travel Enquiry" },
@@ -19,7 +25,7 @@ const ENQUIRY_TYPES = [
 const FAQS = [
   {
     q: "How can I book a customized holiday package?",
-    a: "You can use our online Custom Tour Enquiry form, call us directly at +91 99322 04885, or send us a WhatsApp message. Our holiday specialist will design a personalized itinerary with hotels, sightseeing, and private transport within 24 hours.",
+    a: `You can use our online Custom Tour Enquiry form, call us directly at ${primaryPhone?.display || "our helpline"}, or send us a WhatsApp message. Our holiday specialist will design a personalized itinerary with hotels, sightseeing, and private transport within 24 hours.`,
   },
   {
     q: "What are your customer support working hours?",
@@ -109,10 +115,10 @@ export default function ContactUsPage() {
 
       {/* Quick Contact Cards */}
       <section className="mx-auto max-w-7xl px-4 -mt-8 sm:px-6 relative z-20">
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {/* Card 1: Direct Call */}
           <a
-            href="tel:+919932204885"
+            href={`tel:${primaryPhone?.number || ""}`}
             className="card p-6 flex items-start gap-4 transition hover:-translate-y-1 hover:border-primary-300 hover:shadow-elevated group"
           >
             <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-primary-50 text-primary group-hover:bg-primary group-hover:text-white transition">
@@ -120,14 +126,14 @@ export default function ContactUsPage() {
             </div>
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Call Us Anytime</p>
-              <h3 className="font-display text-base font-bold text-navy mt-0.5">+91 99322 04885</h3>
+              <h3 className="font-display text-base font-bold text-navy mt-0.5">{primaryPhone?.display || primaryPhone?.number}</h3>
               <p className="text-xs text-slate-500 mt-1">Mon–Sun, 9:00 AM – 9:00 PM IST</p>
             </div>
           </a>
 
           {/* Card 2: WhatsApp Concierge */}
           <a
-            href="https://wa.me/919932204885?text=Hello%20Gantabya%2C%20I%20need%20assistance%20planning%20a%20tour!"
+            href={whatsappLink(primaryWhatsApp)}
             target="_blank"
             rel="noopener noreferrer"
             className="card p-6 flex items-start gap-4 transition hover:-translate-y-1 hover:border-green-300 hover:shadow-elevated group"
@@ -137,14 +143,14 @@ export default function ContactUsPage() {
             </div>
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">WhatsApp Chat</p>
-              <h3 className="font-display text-base font-bold text-navy mt-0.5">Quick WhatsApp</h3>
-              <p className="text-xs text-slate-500 mt-1">Instant quotes & trip advice</p>
+              <h3 className="font-display text-base font-bold text-navy mt-0.5">{primaryWhatsApp?.label || "Quick WhatsApp"}</h3>
+              <p className="text-xs text-slate-500 mt-1">{primaryWhatsApp?.display || primaryWhatsApp?.number}</p>
             </div>
           </a>
 
           {/* Card 3: Email Support */}
           <a
-            href="mailto:info@coochbehartravel.com"
+            href={`mailto:${CONTACTS.emails[0]?.address || ""}`}
             className="card p-6 flex items-start gap-4 transition hover:-translate-y-1 hover:border-accent-300 hover:shadow-elevated group"
           >
             <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-accent-50 text-accent group-hover:bg-accent group-hover:text-white transition">
@@ -152,10 +158,41 @@ export default function ContactUsPage() {
             </div>
             <div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Email Enquiries</p>
-              <h3 className="font-display text-base font-bold text-navy mt-0.5 truncate">info@coochbehartravel.com</h3>
+              <h3 className="font-display text-base font-bold text-navy mt-0.5 truncate">{CONTACTS.emails[0]?.address}</h3>
               <p className="text-xs text-slate-500 mt-1">Response within 2-4 hours</p>
             </div>
           </a>
+
+          {CONTACTS.phones.slice(1).map((contact) => (
+            <a key={`phone-${contact.number}`} href={`tel:${contact.number}`} className="card p-6 flex items-start gap-4 transition hover:-translate-y-1 hover:border-primary-300 hover:shadow-elevated group">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-primary-50 text-primary group-hover:bg-primary group-hover:text-white transition"><Phone size={22} /></div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{contact.label || "Call Us"}</p>
+                <h3 className="font-display text-base font-bold text-navy mt-0.5">{contact.display || contact.number}</h3>
+                <p className="text-xs text-slate-500 mt-1">Mon–Sun, 9:00 AM – 9:00 PM IST</p>
+              </div>
+            </a>
+          ))}
+          {CONTACTS.whatsapp.slice(1).map((contact) => (
+            <a key={`whatsapp-${contact.number}`} href={whatsappLink(contact)} target="_blank" rel="noopener noreferrer" className="card p-6 flex items-start gap-4 transition hover:-translate-y-1 hover:border-green-300 hover:shadow-elevated group">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-green-50 text-success group-hover:bg-success group-hover:text-white transition"><MessageCircle size={22} /></div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">WhatsApp Chat</p>
+                <h3 className="font-display text-base font-bold text-navy mt-0.5">{contact.label || "WhatsApp Concierge"}</h3>
+                <p className="text-xs text-slate-500 mt-1">{contact.display || contact.number}</p>
+              </div>
+            </a>
+          ))}
+          {CONTACTS.emails.slice(1).map((contact) => (
+            <a key={`email-${contact.address}`} href={`mailto:${contact.address}`} className="card p-6 flex items-start gap-4 transition hover:-translate-y-1 hover:border-accent-300 hover:shadow-elevated group">
+              <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-accent-50 text-accent group-hover:bg-accent group-hover:text-white transition"><Mail size={22} /></div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{contact.label || "Email Enquiries"}</p>
+                <h3 className="font-display text-base font-bold text-navy mt-0.5 truncate">{contact.address}</h3>
+                <p className="text-xs text-slate-500 mt-1">Response within 2–4 hours</p>
+              </div>
+            </a>
+          ))}
         </div>
       </section>
 
@@ -188,7 +225,7 @@ export default function ContactUsPage() {
                       Send Another Message
                     </button>
                     <a
-                      href={`https://wa.me/919932204885?text=Hello%2C%20I%20just%20submitted%20an%20enquiry%20under%20the%20name%20${encodeURIComponent(form.name)}.`}
+                      href={whatsappLink(primaryWhatsApp, `Hello, I just submitted an enquiry under the name ${form.name}.`)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="btn-whatsapp rounded-xl text-xs font-bold px-4 py-2"
@@ -228,7 +265,7 @@ export default function ContactUsPage() {
                       <input
                         type="tel"
                         required
-                        placeholder="+91 99322 04885"
+                        placeholder={primaryPhone?.display || "Your phone number"}
                         value={form.phone}
                         onChange={(e) => setForm({ ...form, phone: e.target.value })}
                         className="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-xs sm:text-sm font-medium text-slate-800 outline-none transition focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20"
@@ -321,8 +358,8 @@ export default function ContactUsPage() {
                     <MapPin size={18} />
                   </div>
                   <div>
-                    <strong className="block text-navy font-bold">Gantabyaa Main Office</strong>
-                    <span>Opposite Cooch Behar Palace, N.N. Road, Cooch Behar, West Bengal 736101, India</span>
+                    <strong className="block text-navy font-bold">{CONTACTS.office.name}</strong>
+                    <span>{CONTACTS.office.address}</span>
                   </div>
                 </div>
 
@@ -343,9 +380,11 @@ export default function ContactUsPage() {
                   </div>
                   <div>
                     <strong className="block text-navy font-bold">Helpline</strong>
-                    <a href="tel:+919932204885" className="text-primary font-semibold hover:underline">
-                      +91 99322 04885
-                    </a>
+                    {CONTACTS.phones.map((contact) => (
+                      <a key={contact.number} href={`tel:${contact.number}`} className="block text-primary font-semibold hover:underline">
+                        {contact.display || contact.number}
+                      </a>
+                    ))}
                   </div>
                 </div>
               </div>
