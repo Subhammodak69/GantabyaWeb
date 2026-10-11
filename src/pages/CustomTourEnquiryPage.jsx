@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { fetchHotels, fetchPackages, fetchVehicles, submitCustomEnquiry } from "../api";
+import { fetchPackageVariants, fetchPackages, submitCustomEnquiry } from "../api";
 import { useTravel } from "../contexts/TravelContext";
 import Seo from "../components/Seo";
 import CustomSelect from "../components/CustomSelect";
-import CustomDatePicker from "../components/CustomDatePicker";
 import enums from "../utils/enums.json";
 import { Sparkle } from "lucide-react";
 
@@ -15,10 +14,10 @@ const ENQUIRY_TYPE_OPTIONS = Object.values(enums.EnquiryType).filter(
 );
 
 const INITIAL = {
-  name: "", mobile: "", email: "", destination: "", destination_id: "", package_id: "", travel_date: "",
+  name: "", mobile: "", email: "", destination: "", destination_id: "", package_id: "", variant_id: "", travel_date: "",
   travel_duration_day: 0, travel_duration_night: 0, adult_count: 2, child_count: 0, senior_count: 0,
   room_count: 1, vehicle_count: 0, budget_min: 0, budget_max: 0,
-  vehicle_type: "", hotel_id: "", vehicle_id: "", meal_plan: "ANY", special_requirements: "", enquiry_type: "CUSTOM_TOUR",
+  vehicle_type: "ANY", meal_plan: "ANY", special_requirements: "", enquiry_type: "CUSTOM_TOUR",
 };
 
 export default function CustomTourEnquiryPage() {
@@ -28,10 +27,9 @@ export default function CustomTourEnquiryPage() {
   const [status, setStatus] = useState("idle"); // idle | loading | success | error
   const [errorMsg, setErrorMsg] = useState("");
   const firstRef = useRef(null);
-  const [hotels, setHotels] = useState([]);
-  const [vehicles, setVehicles] = useState([]);
   const [packages, setPackages] = useState([]);
-  const [facilitiesLoading, setFacilitiesLoading] = useState(false);
+  const [variants, setVariants] = useState([]);
+  const [variantsLoading, setVariantsLoading] = useState(false);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -52,27 +50,26 @@ export default function CustomTourEnquiryPage() {
   }, []);
 
   useEffect(() => {
-    if (!form.destination_id) {
-      setHotels([]);
-      setVehicles([]);
+    const selectedPackage = packages.find((item) => (item.package_id || item.id) === form.package_id);
+    const packageRef = selectedPackage?.slug || "";
+    if (!packageRef) {
+      setVariants([]);
       return undefined;
     }
     let isMounted = true;
-    setFacilitiesLoading(true);
-    Promise.all([fetchHotels(1, 20, form.destination_id), fetchVehicles(1, 20)])
-      .then(([hotelResponse, vehicleResponse]) => {
+    setVariantsLoading(true);
+    fetchPackageVariants(packageRef, 1, 100)
+      .then((response) => {
         if (!isMounted) return;
-        setHotels(Array.isArray(hotelResponse?.data) ? hotelResponse.data : []);
-        setVehicles(Array.isArray(vehicleResponse?.data) ? vehicleResponse.data : []);
+        setVariants(Array.isArray(response?.items) ? response.items : []);
       })
       .catch(() => {
         if (!isMounted) return;
-        setHotels([]);
-        setVehicles([]);
+        setVariants([]);
       })
-      .finally(() => isMounted && setFacilitiesLoading(false));
+      .finally(() => isMounted && setVariantsLoading(false));
     return () => { isMounted = false; };
-  }, [form.destination_id]);
+  }, [form.package_id, packages]);
 
   const set = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }));
   const setNum = (field) => (e) => {
@@ -87,12 +84,18 @@ export default function CustomTourEnquiryPage() {
   ).values());
   const applyPackage = (value) => {
     const selected = packages.find((item) => (item.package_id || item.id) === value);
-    setForm((f) => ({ ...f, package_id: selected?.package_id || "", destination_id: selected?.destination_id || "", destination: selected?.destination || "", hotel_id: "", vehicle_id: "" }));
+    setForm((f) => ({ ...f, package_id: selected?.package_id || selected?.id || "", variant_id: "", travel_date: "", destination_id: selected?.destination_id || "", destination: selected?.destination || "" }));
   };
   const applyDestination = (value) => {
     const selected = destinationOptions.find((item) => item.value === value);
-    setForm((f) => ({ ...f, package_id: "", destination_id: value, destination: selected?.label || "", hotel_id: "", vehicle_id: "" }));
+    setForm((f) => ({ ...f, package_id: "", variant_id: "", travel_date: "", destination_id: value, destination: selected?.label || "" }));
   };
+  const selectedVariant = variants.find((item) => item.id === form.variant_id);
+  const departureDateOptions = (selectedVariant?.dates || []).filter((date) => date.date || date.departure_date).map((date) => {
+    const departure = date.date || date.departure_date;
+    const returnDate = date.return_date ? ` – ${date.return_date}` : "";
+    return { label: `${departure}${returnDate}`, value: departure };
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -213,6 +216,17 @@ export default function CustomTourEnquiryPage() {
                     />
                   </div>
                   <div>
+                    <label className={labelCls}>Package Variant</label>
+                    <CustomSelect
+                      value={form.variant_id}
+                      options={[{ label: variantsLoading ? "Loading variants…" : "Select package variant", value: "" }, ...variants.map((item) => ({ label: item.name || item.season_name || "Tour variant", value: item.id }))]}
+                      onChange={(value) => setForm((f) => ({ ...f, variant_id: value, travel_date: "" }))}
+                      placeholder={form.package_id ? "Choose variant" : "Choose package first"}
+                      disabled={!form.package_id || variantsLoading}
+                      triggerClassName={selectTriggerCls}
+                    />
+                  </div>
+                  <div>
                     <label className={labelCls}>Or Choose Destination <span className="text-rose-500">*</span></label>
                     <CustomSelect
                       value={form.destination_id}
@@ -233,13 +247,15 @@ export default function CustomTourEnquiryPage() {
                     />
                   </div>
                   <div>
-                    <label className={labelCls} htmlFor="custom-page-date">Tentative Travel Date</label>
-                    <CustomDatePicker
+                    <label className={labelCls} htmlFor="custom-page-date">Departure Date</label>
+                    <CustomSelect
                       id="custom-page-date"
                       value={form.travel_date}
+                      options={[{ label: departureDateOptions.length ? "Select departure date" : "Choose package variant first", value: "" }, ...departureDateOptions]}
                       onChange={(value) => setForm((f) => ({ ...f, travel_date: value }))}
-                      placeholder="Choose travel date"
-                      triggerClassName="h-11"
+                      placeholder="Select departure date"
+                      disabled={!departureDateOptions.length}
+                      triggerClassName={selectTriggerCls}
                     />
                   </div>
                   <div>
@@ -308,26 +324,6 @@ export default function CustomTourEnquiryPage() {
                     <label className={labelCls} htmlFor="custom-page-budget-max">Maximum Budget</label>
                     <input id="custom-page-budget-max" type="text" inputMode="numeric" pattern="[0-9]*" value={form.budget_max} onChange={setNum("budget_max")} className={inputCls} />
                   </div>
-                  <div>
-                    <label className={labelCls}>Preferred Hotel</label>
-                    <CustomSelect
-                      value={form.hotel_id}
-                      options={[{ label: "Any / No preference", value: "" }, ...hotels.map((hotel) => ({ label: `${hotel.name}${hotel.category ? ` · ${hotel.category}` : ""}`, value: hotel.id }))]}
-                      onChange={(value) => setForm((f) => ({ ...f, hotel_id: value }))}
-                      placeholder={facilitiesLoading ? "Loading hotels…" : form.destination_id ? "Select hotel" : "Choose package or destination first"}
-                      triggerClassName={selectTriggerCls}
-                    />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Preferred Vehicle</label>
-                    <CustomSelect
-                      value={form.vehicle_id}
-                      options={[{ label: "Any / No preference", value: "" }, ...vehicles.map((vehicle) => ({ label: `${vehicle.name}${vehicle.capacity ? ` · ${vehicle.capacity} seats` : ""}`, value: vehicle.id }))]}
-                      onChange={(value) => setForm((f) => ({ ...f, vehicle_id: value }))}
-                      placeholder={facilitiesLoading ? "Loading vehicles…" : "Select vehicle"}
-                      triggerClassName={selectTriggerCls}
-                    />
-                  </div>
                 </div>
               </div>
 
@@ -341,7 +337,7 @@ export default function CustomTourEnquiryPage() {
                   id="custom-page-special"
                   value={form.special_requirements}
                   onChange={set("special_requirements")}
-                  placeholder="Mention any specific requests (e.g. senior citizen assistance, child meals, pickup location, 4-star hotel preference, specific sightseeing spots…)"
+                  placeholder="Mention any specific requests (e.g. senior citizen assistance, child meals, pickup location, specific sightseeing spots…)"
                   rows={3}
                   className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 p-3.5 text-xs sm:text-sm text-slate-800 outline-none transition focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20"
                 />

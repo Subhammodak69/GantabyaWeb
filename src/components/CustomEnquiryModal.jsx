@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { fetchHotels, fetchPackages, fetchVehicles, submitCustomEnquiry } from "../api";
+import { fetchPackageVariants, fetchPackages, submitCustomEnquiry } from "../api";
 import { useTravel } from "../contexts/TravelContext";
 import CustomSelect from "./CustomSelect";
-import CustomDatePicker from "./CustomDatePicker";
 import enums from "../utils/enums.json";
 import { X, Sparkle } from "lucide-react";
 
@@ -14,10 +13,10 @@ const ENQUIRY_TYPE_OPTIONS = Object.values(enums.EnquiryType).filter(
 );
 
 const INITIAL = {
-  name: "", mobile: "", email: "", destination: "", destination_id: "", package_id: "", travel_date: "",
+  name: "", mobile: "", email: "", destination: "", destination_id: "", package_id: "", variant_id: "", travel_date: "",
   travel_duration_day: 0, travel_duration_night: 0, adult_count: 2, child_count: 0, senior_count: 0,
   room_count: 1, vehicle_count: 0, budget_min: 0, budget_max: 0,
-  vehicle_type: "", hotel_id: "", vehicle_id: "", meal_plan: "ANY", special_requirements: "", enquiry_type: "CUSTOM_TOUR",
+  vehicle_type: "ANY", meal_plan: "ANY", special_requirements: "", enquiry_type: "CUSTOM_TOUR",
 };
 
 export default function CustomEnquiryModal({ open, onClose }) {
@@ -28,9 +27,8 @@ export default function CustomEnquiryModal({ open, onClose }) {
   const firstRef = useRef(null);
   const overlayRef = useRef(null);
   const [packages, setPackages] = useState([]);
-  const [hotels, setHotels] = useState([]);
-  const [vehicles, setVehicles] = useState([]);
-  const [facilitiesLoading, setFacilitiesLoading] = useState(false);
+  const [variants, setVariants] = useState([]);
+  const [variantsLoading, setVariantsLoading] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -51,27 +49,27 @@ export default function CustomEnquiryModal({ open, onClose }) {
   }, [open]);
 
   useEffect(() => {
-    if (!open || !form.destination_id) {
-      setHotels([]);
-      setVehicles([]);
+    if (!open) return undefined;
+    const selectedPackage = packages.find((item) => (item.package_id || item.id) === form.package_id);
+    const packageRef = selectedPackage?.slug || "";
+    if (!packageRef) {
+      setVariants([]);
       return undefined;
     }
     let isMounted = true;
-    setFacilitiesLoading(true);
-    Promise.all([fetchHotels(1, 20, form.destination_id), fetchVehicles(1, 20)])
-      .then(([hotelResponse, vehicleResponse]) => {
+    setVariantsLoading(true);
+    fetchPackageVariants(packageRef, 1, 100)
+      .then((response) => {
         if (!isMounted) return;
-        setHotels(Array.isArray(hotelResponse?.data) ? hotelResponse.data : []);
-        setVehicles(Array.isArray(vehicleResponse?.data) ? vehicleResponse.data : []);
+        setVariants(Array.isArray(response?.items) ? response.items : []);
       })
       .catch(() => {
         if (!isMounted) return;
-        setHotels([]);
-        setVehicles([]);
+        setVariants([]);
       })
-      .finally(() => isMounted && setFacilitiesLoading(false));
+      .finally(() => isMounted && setVariantsLoading(false));
     return () => { isMounted = false; };
-  }, [open, form.destination_id]);
+  }, [open, form.package_id, packages]);
 
   useEffect(() => {
     if (!open) return;
@@ -93,12 +91,18 @@ export default function CustomEnquiryModal({ open, onClose }) {
   ).values());
   const applyPackage = (value) => {
     const selected = packages.find((item) => (item.package_id || item.id) === value);
-    setForm((f) => ({ ...f, package_id: selected?.package_id || "", destination_id: selected?.destination_id || "", destination: selected?.destination || "", hotel_id: "", vehicle_id: "" }));
+    setForm((f) => ({ ...f, package_id: selected?.package_id || selected?.id || "", variant_id: "", travel_date: "", destination_id: selected?.destination_id || "", destination: selected?.destination || "" }));
   };
   const applyDestination = (value) => {
     const selected = destinationOptions.find((item) => item.value === value);
-    setForm((f) => ({ ...f, package_id: "", destination_id: value, destination: selected?.label || "", hotel_id: "", vehicle_id: "" }));
+    setForm((f) => ({ ...f, package_id: "", variant_id: "", travel_date: "", destination_id: value, destination: selected?.label || "" }));
   };
+  const selectedVariant = variants.find((item) => item.id === form.variant_id);
+  const departureDateOptions = (selectedVariant?.dates || []).filter((date) => date.date || date.departure_date).map((date) => {
+    const departure = date.date || date.departure_date;
+    const returnDate = date.return_date ? ` – ${date.return_date}` : "";
+    return { label: `${departure}${returnDate}`, value: departure };
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -209,6 +213,18 @@ export default function CustomEnquiryModal({ open, onClose }) {
                     />
                   </div>
                   <div>
+                    <label className={labelCls}>Package Variant</label>
+                    <CustomSelect
+                      value={form.variant_id}
+                      options={[{ label: variantsLoading ? "Loading variants…" : "Select package variant", value: "" }, ...variants.map((item) => ({ label: item.name || item.season_name || "Tour variant", value: item.id }))]}
+                      onChange={(value) => setForm((f) => ({ ...f, variant_id: value, travel_date: "" }))}
+                      placeholder={form.package_id ? "Choose variant" : "Choose package first"}
+                      disabled={!form.package_id || variantsLoading}
+                      triggerClassName="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs text-slate-800"
+                      className="w-full"
+                    />
+                  </div>
+                  <div>
                     <label className={labelCls}>Or Choose Destination <span className="text-rose-500">*</span></label>
                     <CustomSelect
                       value={form.destination_id}
@@ -230,12 +246,14 @@ export default function CustomEnquiryModal({ open, onClose }) {
                     />
                   </div>
                   <div>
-                    <label className={labelCls} htmlFor="cenq-travel-date">Tentative Date</label>
-                    <CustomDatePicker
+                    <label className={labelCls} htmlFor="cenq-travel-date">Departure Date</label>
+                    <CustomSelect
                       id="cenq-travel-date"
                       value={form.travel_date}
+                      options={[{ label: departureDateOptions.length ? "Select departure date" : "Choose package variant first", value: "" }, ...departureDateOptions]}
                       onChange={(value) => setForm((f) => ({ ...f, travel_date: value }))}
-                      placeholder="Choose tentative date"
+                      placeholder="Select departure date"
+                      disabled={!departureDateOptions.length}
                       triggerClassName="h-10"
                     />
                   </div>
@@ -281,6 +299,16 @@ export default function CustomEnquiryModal({ open, onClose }) {
                     />
                   </div>
                   <div>
+                    <label className={labelCls} htmlFor="cenq-vehicle-type">Vehicle Type</label>
+                    <CustomSelect
+                      value={form.vehicle_type}
+                      options={[{ label: "Any / No preference", value: "ANY" }, ...VEHICLE_OPTIONS.map((vehicle) => ({ label: vehicle, value: vehicle }))]}
+                      onChange={(value) => setForm((f) => ({ ...f, vehicle_type: value }))}
+                      placeholder="Select vehicle type"
+                      triggerClassName="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs text-slate-800"
+                    />
+                  </div>
+                  <div>
                     <label className={labelCls} htmlFor="cenq-vehicle-count">Vehicles</label>
                     <input id="cenq-vehicle-count" type="text" inputMode="numeric" pattern="[0-9]*" value={form.vehicle_count} onChange={setNum("vehicle_count")} className={inputCls} />
                   </div>
@@ -293,30 +321,6 @@ export default function CustomEnquiryModal({ open, onClose }) {
                     <input id="cenq-budget-max" type="text" inputMode="numeric" pattern="[0-9]*" value={form.budget_max} onChange={setNum("budget_max")} className={inputCls} />
                   </div>
                 </div>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <div>
-                    <label className={labelCls}>Preferred Hotel</label>
-                    <CustomSelect
-                      value={form.hotel_id}
-                      options={[{ label: "Any / No preference", value: "" }, ...hotels.map((hotel) => ({ label: `${hotel.name}${hotel.category ? ` · ${hotel.category}` : ""}`, value: hotel.id }))]}
-                      onChange={(value) => setForm((f) => ({ ...f, hotel_id: value }))}
-                      placeholder={facilitiesLoading ? "Loading hotels…" : form.destination_id ? "Select hotel" : "Choose package or destination first"}
-                      triggerClassName="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs text-slate-800"
-                      className="w-full"
-                    />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Preferred Vehicle</label>
-                    <CustomSelect
-                      value={form.vehicle_id}
-                      options={[{ label: "Any / No preference", value: "" }, ...vehicles.map((vehicle) => ({ label: `${vehicle.name}${vehicle.capacity ? ` · ${vehicle.capacity} seats` : ""}`, value: vehicle.id }))]}
-                      onChange={(value) => setForm((f) => ({ ...f, vehicle_id: value }))}
-                      placeholder={facilitiesLoading ? "Loading vehicles…" : "Select vehicle"}
-                      triggerClassName="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs text-slate-800"
-                      className="w-full"
-                    />
-                  </div>
-                </div>
               </div>
 
               {/* Special Requirements */}
@@ -326,7 +330,7 @@ export default function CustomEnquiryModal({ open, onClose }) {
                   id="cenq-special"
                   value={form.special_requirements}
                   onChange={set("special_requirements")}
-                  placeholder="Dietary requirements, senior citizen care, hotel tier preferences, etc."
+                  placeholder="Dietary requirements, senior citizen care, pickup requests, or other preferences."
                   rows={2}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs outline-none transition focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20 resize-none"
                 />
