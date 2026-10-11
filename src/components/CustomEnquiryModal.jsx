@@ -1,16 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { fetchPackageVariants, fetchPackages, submitCustomEnquiry } from "../api";
+import { fetchPackageVariants, fetchPackages } from "../api";
 import { useTravel } from "../contexts/TravelContext";
 import CustomSelect from "./CustomSelect";
 import enums from "../utils/enums.json";
 import { X, Sparkle } from "lucide-react";
+import CONTACTS from "../config/contacts.json";
 
 const VEHICLE_OPTIONS = Object.values(enums.VehicleType);
 const MEAL_OPTIONS = Object.values(enums.MealPlan);
 const ENQUIRY_TYPE_OPTIONS = Object.values(enums.EnquiryType).filter(
   (t) => t !== "FIXED_TOUR" && t !== "FIXED TOUR"
 );
+const WHATSAPP_NUMBER = CONTACTS.whatsapp?.[0]?.number || "919932204885";
 
 const INITIAL = {
   name: "", mobile: "", email: "", destination: "", destination_id: "", package_id: "", variant_id: "", travel_date: "",
@@ -98,6 +100,7 @@ export default function CustomEnquiryModal({ open, onClose }) {
     setForm((f) => ({ ...f, package_id: "", variant_id: "", travel_date: "", destination_id: value, destination: selected?.label || "" }));
   };
   const selectedVariant = variants.find((item) => item.id === form.variant_id);
+  const selectedPackage = packages.find((item) => (item.package_id || item.id) === form.package_id);
   const departureDateOptions = (selectedVariant?.dates || []).filter((date) => date.date || date.departure_date).map((date) => {
     const departure = date.date || date.departure_date;
     const returnDate = date.return_date ? ` – ${date.return_date}` : "";
@@ -113,7 +116,33 @@ export default function CustomEnquiryModal({ open, onClose }) {
     setStatus("loading");
     setErrorMsg("");
     try {
-      await submitCustomEnquiry({ ...form, customer_id: user?.id || "" });
+      const whatsappMessage = [
+        "Hello Gantabyaa team! 👋",
+        "",
+        "I would like to plan a custom tour:",
+        `Enquiry type: ${form.enquiry_type || "CUSTOM_TOUR"}`,
+        `Name: ${form.name.trim()}`,
+        `Mobile / WhatsApp: ${form.mobile.trim()}`,
+        `Email: ${form.email.trim() || "Not provided"}`,
+        `Destination: ${form.destination || "Not specified"}`,
+        `Package: ${selectedPackage?.title || "Custom package"}`,
+        `Variant: ${selectedVariant?.name || selectedVariant?.season_name || "Not selected"}`,
+        `Departure date: ${form.travel_date || "Not selected"}`,
+        `Duration: ${form.travel_duration_day || 0} days / ${form.travel_duration_night || 0} nights`,
+        `Travellers: Adults ${form.adult_count || 0}, Children ${form.child_count || 0}, Seniors ${form.senior_count || 0}`,
+        `Rooms: ${form.room_count || 0}`,
+        `Vehicle type: ${form.vehicle_type || "ANY"}`,
+        `Vehicles: ${form.vehicle_count || 0}`,
+        `Budget: ${form.budget_min || 0} - ${form.budget_max || 0}`,
+        `Meal plan: ${form.meal_plan || "ANY"}`,
+        `Special requirements: ${form.special_requirements.trim() || "None"}`,
+        selectedVariant?.cover_image ? `Package image: ${selectedVariant.cover_image}` : (selectedPackage?.cover_image ? `Package image: ${selectedPackage.cover_image}` : ""),
+        "",
+        "Please help me with availability, pricing and a personalized itinerary.",
+      ].filter(Boolean).join("\n");
+      const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g, "")}?text=${encodeURIComponent(whatsappMessage)}`;
+      const whatsappWindow = window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+      if (!whatsappWindow) window.location.assign(whatsappUrl);
       setStatus("success");
     } catch (err) {
       setErrorMsg(err.message || "Something went wrong. Please try again.");
@@ -165,9 +194,9 @@ export default function CustomEnquiryModal({ open, onClose }) {
           {status === "success" ? (
             <div className="flex flex-col items-center py-8 text-center">
               <span className="mb-3 grid h-14 w-14 place-items-center rounded-full bg-green-100 text-2xl text-success font-bold">✓</span>
-              <h3 className="font-display text-xl font-bold text-navy">Custom Enquiry Received!</h3>
+              <h3 className="font-display text-xl font-bold text-navy">Enquiry Ready in WhatsApp!</h3>
               <p className="mt-2 text-xs text-slate-500 max-w-sm">
-                Thank you, {form.name}! Our destination planners will design your itinerary for {form.destination} and reach out to you within 24 hours.
+                Your complete enquiry is prepared in WhatsApp. Please press Send to share it with our travel team.
               </p>
               <button
                 onClick={onClose}

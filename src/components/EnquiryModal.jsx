@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { submitEnquiry, fetchPackageVariants, isValidUUID } from "../api";
+import { fetchPackageVariants, fetchVariant } from "../api";
 import { useTravel } from "../contexts/TravelContext";
 import CustomSelect from "./CustomSelect";
 import enums from "../utils/enums.json";
 import { X } from "lucide-react";
+import CONTACTS from "../config/contacts.json";
 
 const MEAL_OPTIONS = ["ANY", ...Object.values(enums.MealPlan)];
 const VEHICLE_OPTIONS = ["ANY", ...Object.values(enums.VehicleType)];
+const WHATSAPP_NUMBER = CONTACTS.whatsapp?.[0]?.number || "919932204885";
 const INITIAL = {
   name: "", mobile: "", email: "", channel: "WEBSITE", subject: "", message: "", variant_id: "", travel_date: "",
   adult_count: 1, child_count: 0, senior_count: 0,
@@ -46,13 +48,16 @@ export default function EnquiryModal({
   packageTitle = "",
   destinationId = "",
   travelDate = "",
+  departureDates = [],
   durationDays = 0,
   durationNights = 0,
+  packageImage = "",
 }) {
   const { user } = useTravel();
   const [form, setForm] = useState(INITIAL);
   const [variants, setVariants] = useState([]);
-  const selectedVariant = variants.find((variant) => variant.id === form.variant_id);
+  const selectedVariant = variants.find((variant) => variant.id === form.variant_id)
+    || (form.variant_id ? { id: form.variant_id, dates: departureDates } : null);
   const travelDurationDay = variantDuration(selectedVariant, "duration_days", durationDays, "D");
   const travelDurationNight = variantDuration(selectedVariant, "duration_nights", durationNights, "N");
   const [status, setStatus] = useState("idle");
@@ -71,10 +76,15 @@ export default function EnquiryModal({
         .then((result) => {
           if (!isMounted || !result) return;
           if (Array.isArray(result.items) && result.items.length > 0) {
-            setVariants(result.items);
+            const loadedVariants = result.items.map((item) => (
+              item.id === variantId && departureDates.length > 0
+                ? { ...item, dates: departureDates }
+                : item
+            ));
+            setVariants(loadedVariants);
             setForm((f) => ({
               ...f,
-              variant_id: variantId || f.variant_id || result.items[0].id || "",
+              variant_id: variantId || f.variant_id || loadedVariants[0].id || "",
             }));
           }
         })
@@ -84,7 +94,7 @@ export default function EnquiryModal({
     return () => {
       isMounted = false;
     };
-  }, [open, packageSlug, packageId, variantId, packageTitle]);
+  }, [open, packageSlug, packageId, variantId, packageTitle, departureDates]);
 
   useEffect(() => {
     if (open) {
@@ -133,6 +143,22 @@ export default function EnquiryModal({
     }
   };
 
+  const handleVariantChange = async (value) => {
+    setForm((f) => ({ ...f, variant_id: value, travel_date: "" }));
+    const selected = variants.find((item) => item.id === value);
+    const lookupKey = packageSlug || packageId;
+    if (!selected || selected.dates?.length || !lookupKey) return;
+
+    try {
+      const detailed = await fetchVariant(lookupKey, selected.slug || selected.variant_slug || selected.key || value, variants);
+      setVariants((current) => current.map((item) => (
+        item.id === value || item.id === detailed.id ? detailed : item
+      )));
+    } catch {
+      // Keep the variant option available even if its detail request fails.
+    }
+  };
+
   const departureDateOptions = (selectedVariant?.dates || [])
     .filter((date) => date.date || date.departure_date)
     .map((date) => {
@@ -150,37 +176,38 @@ export default function EnquiryModal({
     setStatus("loading");
     setErrorMsg("");
     try {
-      const finalPkgId = isValidUUID(packageId) ? packageId : "";
-      const finalVariantId = isValidUUID(form.variant_id) ? form.variant_id : (isValidUUID(variantId) ? variantId : "");
-      await submitEnquiry({
-        enquiry_type: "FIXED_TOUR",
-        package_id: finalPkgId,
-        variant_id: finalVariantId,
-        destination_id: destinationId,
-        channel: form.channel || "WEBSITE",
-        subject: form.subject,
-        message: form.message,
-        name: form.name,
-        mobile: form.mobile,
-        email: form.email,
-        travel_date: form.travel_date,
-        travel_duration_day: travelDurationDay,
-        travel_duration_night: travelDurationNight,
-        adult_count: form.adult_count,
-        child_count: form.child_count,
-        senior_count: form.senior_count,
-        vehicle_type: form.vehicle_type,
-        room_count: form.room_count,
-        vehicle_count: form.vehicle_count,
-        budget_min: form.budget_min,
-        budget_max: form.budget_max,
-        special_requirements: form.special_requirements,
-        meal_plan: form.meal_plan,
-        customer_id: user?.id || "",
-      });
+      const selectedVariantName = selectedVariant?.name || selectedVariant?.season_name || "Selected package option";
+      const whatsappMessage = [
+        "Hello Gantabyaa team! 👋",
+        "",
+        "I would like to customise this tour package:",
+        `Package: ${packageTitle || "Tour package"}`,
+        `Enquiry source: ${form.channel || "WEBSITE"}`,
+        `Variant: ${selectedVariantName}`,
+        `Departure date: ${form.travel_date || "Not selected"}`,
+        `Full name: ${form.name.trim()}`,
+        `Mobile / WhatsApp: ${form.mobile.trim()}`,
+        `Email: ${form.email.trim() || "Not provided"}`,
+        `Travellers: Adults ${form.adult_count || 0}, Children ${form.child_count || 0}, Seniors ${form.senior_count || 0}`,
+        `Travel duration: ${travelDurationDay} days / ${travelDurationNight} nights`,
+        `Vehicle type: ${form.vehicle_type || "ANY"}`,
+        `Rooms: ${form.room_count || 0}`,
+        `Vehicles: ${form.vehicle_count || 0}`,
+        `Budget: ${form.budget_min || 0} - ${form.budget_max || 0}`,
+        `Meal plan: ${form.meal_plan || "ANY"}`,
+        `Subject: ${form.subject.trim() || "Not provided"}`,
+        `Special requirements: ${form.special_requirements.trim() || "None"}`,
+        `Travel plans / preferences: ${form.message.trim() || "None"}`,
+        packageImage ? `Package banner: ${packageImage}` : "",
+        "",
+        "Please share availability, pricing and booking details.",
+      ].filter(Boolean).join("\n");
+      const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g, "")}?text=${encodeURIComponent(whatsappMessage)}`;
+      const whatsappWindow = window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+      if (!whatsappWindow) window.location.assign(whatsappUrl);
       setStatus("success");
     } catch (err) {
-      setErrorMsg(err.message || "Something went wrong. Please try again.");
+      setErrorMsg(err.message || "Could not open WhatsApp. Please try again.");
       setStatus("error");
     }
   };
@@ -224,8 +251,8 @@ export default function EnquiryModal({
           {status === "success" ? (
             <div className="flex flex-col items-center py-6 text-center">
               <span className="mb-3 grid h-14 w-14 place-items-center rounded-full bg-green-100 text-2xl text-success font-bold">✓</span>
-              <h3 className="font-display text-xl font-bold text-navy">Enquiry Sent Successfully!</h3>
-              <p className="mt-2 text-xs text-slate-500 max-w-xs">Thank you, {form.name}. Our holiday manager will contact you on WhatsApp or phone shortly.</p>
+              <h3 className="font-display text-xl font-bold text-navy">Enquiry Ready in WhatsApp!</h3>
+              <p className="mt-2 text-xs text-slate-500 max-w-xs">Your complete enquiry is prepared in WhatsApp. Please press Send to share it with our holiday team.</p>
             </div>
           ) : (
             <form id="enquiry-form" onSubmit={handleSubmit} noValidate className="grid gap-3.5">
@@ -315,7 +342,7 @@ export default function EnquiryModal({
                       label: `${v.name || v.season_name}${v.season_name && v.name && v.name !== v.season_name ? ` (${v.season_name})` : ""}`,
                       value: v.id,
                     }))}
-                    onChange={(value) => setForm((f) => ({ ...f, variant_id: value, travel_date: "" }))}
+                    onChange={handleVariantChange}
                     placeholder="Select package option"
                     triggerClassName="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs text-slate-800"
                     className="w-full"

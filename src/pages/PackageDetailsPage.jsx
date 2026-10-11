@@ -13,6 +13,9 @@ import Reviews from "../components/Reviews";
 import EnquiryModal from "../components/EnquiryModal";
 import CustomSelect from "../components/CustomSelect";
 import DepartureDateModal from "../components/DepartureDateModal";
+import CONTACTS from "../config/contacts.json";
+
+const WHATSAPP_NUMBER = CONTACTS.whatsapp?.[0]?.number || "919932204885";
 
 export default function PackageDetailsPage() {
   const { id } = useParams();
@@ -64,6 +67,7 @@ export default function PackageDetailsPage() {
   useEffect(() => {
     if (pack) {
       setVariant(pack.seasons?.[0] || null);
+      setSelectedDepartureDate(null);
       setShowBannerVideo(false);
       setWishlistState(pack.is_wishlist ? "added" : "idle");
     }
@@ -206,15 +210,53 @@ export default function PackageDetailsPage() {
   }
 
   const active = variant || pack.seasons?.[selected] || {};
+
+  const handleShareEnquiry = () => {
+    if (!pack) return;
+
+    const selectedDate = selectedDepartureDate?.departure_date
+      || selectedDepartureDate?.date
+      || active?.dates?.[0]?.departure_date
+      || active?.dates?.[0]?.date
+      || "Upcoming departure";
+    const variantName = active?.name || active?.season_name || "Selected package option";
+    // Keep this in sync with the hero image source so the WhatsApp enquiry
+    // always carries the same package banner the customer just viewed.
+    const imageUrl = active?.cover_image
+      || active?.banner?.image
+      || pack?.image
+      || pack?.cover_image
+      || pack?.banner?.image
+      || "";
+    const message = [
+      "Hello Gantabyaa team! 👋",
+      "",
+      "I would like to enquire about this tour package:",
+      `Package: ${pack.title}`,
+      `Variant: ${variantName}`,
+      `Departure date: ${selectedDate}`,
+      imageUrl ? `Package image: ${imageUrl}` : "",
+      "",
+      "Please share availability, pricing and booking details.",
+    ].filter(Boolean).join("\n");
+
+    window.open(
+      `https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`,
+      "_blank",
+      "noopener,noreferrer",
+    );
+  };
   const route = (active.route || pack.route || []).map((place) => place.city || place.place || place).join(" → ");
 
   const chooseVariant = async (index) => {
     setSelected(index);
+    setSelectedDepartureDate(null);
     setShowBannerVideo(false);
     const option = pack.seasons[index];
-    if (index && (option.id || option.slug)) {
+    const variantKey = option.slug || option.variant_slug || option.key || option.id;
+    if (variantKey) {
       try {
-        setVariant(await fetchVariant(pack.slug, option.slug || option.id));
+        setVariant(await fetchVariant(pack.slug, variantKey, pack.seasons));
       } catch {
         setVariant(option);
       }
@@ -350,7 +392,7 @@ export default function PackageDetailsPage() {
               onClick={() => setEnquiryOpen(true)}
               className="btn-accent rounded-xl text-sm font-bold shadow-lg"
             >
-              Enquire Now →
+              Customise
             </button>
             <button
               onClick={toggleWishlist}
@@ -488,20 +530,18 @@ export default function PackageDetailsPage() {
 
             <div className="mt-6 flex flex-col gap-3">
               <button
-                onClick={() => setEnquiryOpen(true)}
-                className="btn-accent w-full justify-center rounded-xl py-3 text-sm font-bold"
-              >
-                Send Travel Enquiry →
-              </button>
-              <a
-                href={`https://wa.me/919932204885?text=Hello%2C%20I%20am%20interested%20in%20booking%20the%20${encodeURIComponent(pack.title)}%20tour.`}
-                target="_blank"
-                rel="noopener noreferrer"
+                onClick={handleShareEnquiry}
                 className="btn-whatsapp w-full justify-center rounded-xl py-3 text-sm font-bold"
               >
                 <MessageCircle size={16} />
-                <span>Chat on WhatsApp</span>
-              </a>
+                <span>Share Enquiry</span>
+              </button>
+              <button
+                onClick={() => setEnquiryOpen(true)}
+                className="btn-accent w-full justify-center rounded-xl py-3 text-sm font-bold"
+              >
+                Customise
+              </button>
             </div>
           </div>
         </div>
@@ -786,20 +826,22 @@ export default function PackageDetailsPage() {
         </div>
         <div className="flex items-center gap-2 ml-auto">
           <a
-            href={`https://wa.me/919932204885?text=Hello%2C%20I%20am%20interested%20in%20${encodeURIComponent(pack.title)}.`}
-            target="_blank"
-            rel="noopener noreferrer"
+            href="#share-enquiry"
+            onClick={(event) => {
+              event.preventDefault();
+              handleShareEnquiry();
+            }}
             className="btn-whatsapp rounded-xl text-xs font-bold px-3.5 py-2"
           >
             <MessageCircle size={15} />
-            <span className="hidden sm:inline">WhatsApp</span>
+            <span>Share Enquiry</span>
           </a>
           <button
-            id="bottom-enquire-now-btn"
+            id="bottom-customise-btn"
             onClick={() => setEnquiryOpen(true)}
             className="btn-accent rounded-xl text-xs font-bold px-4 py-2"
           >
-            Enquire Now →
+            Customise
           </button>
         </div>
       </div>
@@ -828,6 +870,8 @@ export default function PackageDetailsPage() {
         travelDate={selectedDepartureDate?.departure_date || selectedDepartureDate?.date || active?.dates?.[0]?.date || ""}
         durationDays={active?.duration_days || 0}
         durationNights={active?.duration_nights || 0}
+        packageImage={active?.cover_image || active?.banner?.image || pack?.image || pack?.cover_image || pack?.banner?.image || ""}
+        departureDates={active?.dates || []}
       />
     </div>
   );
