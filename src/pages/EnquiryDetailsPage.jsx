@@ -4,7 +4,6 @@ import { ArrowLeft, ArrowRight, CalendarDays, FileText, LoaderCircle } from "luc
 import {
   fetchDestinations,
   fetchEnquiries,
-  fetchHotels,
   fetchPackages,
   fetchPackageVariants,
   fetchVehicles,
@@ -52,7 +51,7 @@ function displayValue(value) {
 function lookupLabel(items, id) {
   if (!id) return undefined;
   const match = items.find((item) => String(item.id || item.package_id) === String(id));
-  return match && firstValue(match.title, match.name, match.destination_name, match.destination, match.hotel_name, match.vehicle_name);
+  return match && firstValue(match.title, match.name, match.destination_name, match.destination, match.vehicle_name);
 }
 
 function firstValue(...values) {
@@ -99,7 +98,7 @@ export default function EnquiryDetailsPage() {
   const [enquiry, setEnquiry] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [lookupOptions, setLookupOptions] = useState({ packages: [], variants: [], destinations: [], hotels: [], vehicles: [] });
+  const [lookupOptions, setLookupOptions] = useState({ packages: [], variants: [], destinations: [], vehicles: [] });
   const [lookupError, setLookupError] = useState("");
 
   useEffect(() => {
@@ -134,17 +133,15 @@ export default function EnquiryDetailsPage() {
     Promise.allSettled([
       fetchPackages({ page: 1, page_size: 100 }),
       fetchDestinations(1, 100),
-      fetchHotels(1, 100),
       fetchVehicles(1, 100),
-    ]).then(([packages, destinations, hotels, vehicles]) => {
+    ]).then(([packages, destinations, vehicles]) => {
       if (!active) return;
-      const failed = [packages, destinations, hotels, vehicles].some((result) => result.status === "rejected");
+      const failed = [packages, destinations, vehicles].some((result) => result.status === "rejected");
       setLookupError(failed ? "Some linked names could not be resolved; showing the enquiry data available." : "");
       setLookupOptions((current) => ({
         ...current,
         packages: packages.status === "fulfilled" ? getItems(packages.value) : [],
         destinations: destinations.status === "fulfilled" ? getItems(destinations.value) : [],
-        hotels: hotels.status === "fulfilled" ? getItems(hotels.value) : [],
         vehicles: vehicles.status === "fulfilled" ? getItems(vehicles.value) : [],
       }));
     });
@@ -247,7 +244,6 @@ export default function EnquiryDetailsPage() {
               <Detail label="Children" value={enquiry.child_count} />
               <Detail label="Seniors" value={enquiry.senior_count} />
               <Detail label="Rooms" value={firstValue(enquiry.room_count, enquiry.no_room)} />
-              <Detail label="Hotel" value={firstValue(enquiry.hotel_name, enquiry.hotel?.name, lookupLabel(lookupOptions.hotels, enquiry.hotel_id))} />
               <Detail label="Vehicles" value={enquiry.vehicle_count} />
               <Detail label="Vehicle" value={firstValue(enquiry.vehicle_name, enquiry.vehicle?.name, lookupLabel(lookupOptions.vehicles, enquiry.vehicle_id))} />
               <Detail label="Vehicle registration" value={enquiry.vehicle_registration_number} />

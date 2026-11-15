@@ -28,7 +28,7 @@ export default function DestinationsPage() {
     <main className="min-h-screen bg-slate-50">
       <Seo
         title="Explore Destinations | Gantabyaa"
-        description="Explore Gantabyaa destinations, discover curated tour packages, and find hotels for your next trip."
+        description="Explore Gantabyaa destinations and discover curated tour packages for your next trip."
         path="/destinations"
       />
       <section className="relative flex min-h-[280px] items-center overflow-hidden bg-navy px-4 py-12 text-white sm:px-6 lg:px-12">

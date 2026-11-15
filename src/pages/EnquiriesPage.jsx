@@ -4,7 +4,6 @@ import {
   deleteEnquiry,
   fetchDestinations,
   fetchEnquiries,
-  fetchHotels,
   fetchPackages,
   fetchPackageVariants,
   fetchVehicles,
@@ -55,7 +54,6 @@ export default function EnquiriesPage() {
     packages: [],
     variants: [],
     destinations: [],
-    hotels: [],
     vehicles: [],
   });
   const [lookupsLoading, setLookupsLoading] = useState(false);
@@ -81,7 +79,7 @@ export default function EnquiriesPage() {
       package_id: item.package_id || "", variant_id: item.variant_id || "", destination_id: item.destination_id || "",
       travel_duration_day: item.travel_duration_day ?? 0, travel_duration_night: item.travel_duration_night ?? 0,
       adult_count: item.adult_count ?? item.pax_no ?? 1, child_count: item.child_count ?? 0, senior_count: item.senior_count ?? 0,
-      hotel_id: item.hotel_id || "", vehicle_id: item.vehicle_id || "",
+      vehicle_id: item.vehicle_id || "",
       room_count: item.room_count ?? item.no_room ?? 0, vehicle_count: item.vehicle_count ?? 0,
       budget_min: item.budget_min ?? 0, budget_max: item.budget_max ?? 0,
       message: item.message || "", special_requirements: item.special_requirements || "", meal_plan: item.meal_plan || "ANY",
@@ -96,14 +94,12 @@ export default function EnquiriesPage() {
     Promise.allSettled([
       fetchPackages({ page: 1, page_size: 100 }),
       fetchDestinations(1, 100),
-      fetchHotels(1, 100),
       fetchVehicles(1, 100),
-    ]).then(([packagesResult, destinationsResult, hotelsResult, vehiclesResult]) => {
+    ]).then(([packagesResult, destinationsResult, vehiclesResult]) => {
       if (!active) return;
       const failedLookups = [
         packagesResult,
         destinationsResult,
-        hotelsResult,
         vehiclesResult,
       ].filter((result) => result.status === "rejected");
       if (failedLookups.length) {
@@ -113,7 +109,6 @@ export default function EnquiriesPage() {
         ...current,
         packages: packagesResult.status === "fulfilled" ? packagesResult.value.items : [],
         destinations: destinationsResult.status === "fulfilled" ? destinationsResult.value.items : [],
-        hotels: hotelsResult.status === "fulfilled" ? getLookupItems(hotelsResult.value) : [],
         vehicles: vehiclesResult.status === "fulfilled" ? getLookupItems(vehiclesResult.value) : [],
       }));
       setLookupsLoading(false);
@@ -460,17 +455,6 @@ export default function EnquiriesPage() {
                   editing.destination_name || editing.destination,
                 ),
                 lookupsLoading ? "Loading destinations..." : "Select destination",
-              )}
-              {selectEditField(
-                "hotel_id",
-                "Hotel",
-                optionsWithCurrent(
-                  lookupOptions.hotels,
-                  editForm.hotel_id,
-                  (item) => item.name || item.hotel_name || item.title,
-                  editing.hotel_name || editing.hotel?.name,
-                ),
-                lookupsLoading ? "Loading hotels..." : "Select hotel",
               )}
               {selectEditField(
                 "vehicle_id",
