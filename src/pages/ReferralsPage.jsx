@@ -88,6 +88,17 @@ export default function ReferralsPage() {
           </span>
         </div>
 
+        <section className="card mb-6 p-4 sm:p-5" aria-labelledby="referral-criteria-title">
+          <h2 id="referral-criteria-title" className="font-display text-base font-bold text-navy">
+            How to earn a referral reward
+          </h2>
+          <ol className="mt-3 grid gap-3 text-xs leading-relaxed text-slate-600 sm:grid-cols-3">
+            <li><span className="font-bold text-navy">1. Invite someone new.</span> Share your referral link with a person who does not already have a Gantabyaa account.</li>
+            <li><span className="font-bold text-navy">2. They sign up through your link.</span> The referral must be connected when they create their account; existing accounts cannot be added later.</li>
+            <li><span className="font-bold text-navy">3. They complete a booking.</span> The referral is reviewed after booking completion. A reward is given only if it is approved; its amount and booking window follow the referral settings.</li>
+          </ol>
+        </section>
+
         {/* ERROR */}
         {error && (
           <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-semibold text-rose-700 flex items-center justify-between">
