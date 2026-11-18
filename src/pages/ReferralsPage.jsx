@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Check, Copy, Gift, LoaderCircle } from "lucide-react";
+import { Check, ChevronRight, Copy, Folder, Gift, LoaderCircle, X } from "lucide-react";
 import { fetchReferralCode, fetchReferrals, getReferralLink } from "../api";
 
 const formatDate = (value) => {
@@ -25,9 +25,27 @@ function ReferralField({ label, value }) {
   );
 }
 
+const getReferralStatusClass = (status) => {
+  if (["REWARD_APPROVED", "REWARD_CREDITED", "COMPLETED", "SIGNED_UP", "CONVERTED"].includes(status)) {
+    return "bg-green-100 text-success";
+  }
+  if (["PENDING", "REGISTERED", "BOOKING_COMPLETED", "REWARD_ELIGIBLE"].includes(status)) {
+    return "bg-amber-100 text-amber-800";
+  }
+  if (["EXPIRED", "CANCELLED", "BLOCKED"].includes(status)) {
+    return "bg-rose-100 text-rose-700";
+  }
+  return "bg-slate-100 text-slate-600";
+};
+
+const formatStatus = (status) => (status || "PENDING")
+  .toLowerCase()
+  .replace(/(^|_)([a-z])/g, (_, separator, letter) => `${separator ? " " : ""}${letter.toUpperCase()}`);
+
 export default function ReferralsPage() {
   const [link, setLink] = useState("");
   const [referrals, setReferrals] = useState([]);
+  const [selectedReferral, setSelectedReferral] = useState(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
@@ -43,6 +61,22 @@ export default function ReferralsPage() {
       .catch((err) => setError(err.message || "Could not load referrals."))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!selectedReferral) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape") setSelectedReferral(null);
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [selectedReferral]);
 
   const copyLink = async () => {
     if (!link) return;
@@ -124,36 +158,35 @@ export default function ReferralsPage() {
             <div className="card divide-y divide-slate-100">
               {referrals.map((referral) => {
                 const customer = referral.referred_customer || {};
+                const status = referral.status || "PENDING";
                 return (
-                <article key={referral.id} className="p-4 transition hover:bg-slate-50 sm:p-5">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <h3 className="text-sm font-bold text-navy">{customer.name || "Invited Traveller"}</h3>
-                      <p className="mt-1 text-[11px] text-slate-400">Referred {formatDate(referral.created_at)}</p>
-                    </div>
-                    <span className={`w-fit rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider ${
-                      referral.status === "COMPLETED" || referral.status === "SIGNED_UP" || referral.status === "CONVERTED"
-                        ? "bg-green-100 text-success"
-                        : referral.status === "PENDING" || referral.status === "REGISTERED"
-                        ? "bg-amber-100 text-amber-800"
-                        : "bg-slate-100 text-slate-600"
-                    }`}>
-                      {referral.status || "Pending"}
+                  <button
+                    key={referral.id}
+                    type="button"
+                    aria-haspopup="dialog"
+                    aria-label={`View referral details for ${customer.name || "Invited Traveller"}`}
+                    onClick={() => setSelectedReferral(referral)}
+                    className="group flex w-full items-center gap-3 px-3 py-3 text-left transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-primary sm:px-4"
+                  >
+                    <span className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                      <Folder size={19} />
                     </span>
-                  </div>
-                  <dl className="mt-4 grid grid-cols-2 gap-x-5 gap-y-3 border-t border-slate-100 pt-3 sm:grid-cols-3 lg:grid-cols-4">
-                    <ReferralField label="Referral code" value={referral.referral_code} />
-                    <ReferralField label="Customer code" value={customer.customer_code} />
-                    <ReferralField label="Email" value={customer.email} />
-                    <ReferralField label="Mobile" value={customer.mobile} />
-                    <ReferralField label="Reward" value={formatReward(referral.reward_amount, referral.currency)} />
-                    <ReferralField label="Payment method" value={referral.payment_method} />
-                    <ReferralField label="Booking" value={customer.booking_code || customer.booking_id} />
-                    <ReferralField label="Booking date" value={formatDate(customer.booking_date)} />
-                    <ReferralField label="Transaction date" value={formatDate(referral.transaction_date)} />
-                    <ReferralField label="Converted at" value={formatDate(referral.converted_at)} />
-                  </dl>
-                </article>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex min-w-0 flex-wrap items-center gap-2">
+                        <span className="truncate text-sm font-bold text-navy">{customer.name || "Invited Traveller"}</span>
+                        <span className={`w-fit rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide ${getReferralStatusClass(status)}`}>
+                          {formatStatus(status)}
+                        </span>
+                      </span>
+                      <span className="mt-1 block truncate text-[11px] text-slate-400">
+                        Referred {formatDate(referral.created_at)}
+                      </span>
+                    </span>
+                    <span className="flex flex-shrink-0 items-center gap-2 text-right">
+                      <span className="text-xs font-bold text-navy">{formatReward(referral.reward_amount, referral.currency)}</span>
+                      <ChevronRight className="text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-primary" size={17} />
+                    </span>
+                  </button>
                 );
               })}
             </div>
@@ -168,6 +201,58 @@ export default function ReferralsPage() {
           )}
         </section>
       </div>
+
+      {selectedReferral && (
+        <div
+          className="fixed inset-0 z-[60] flex items-end justify-center bg-slate-950/60 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+          onMouseDown={(event) => event.target === event.currentTarget && setSelectedReferral(null)}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="referral-detail-title"
+            className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl"
+          >
+            <header className="flex shrink-0 items-start justify-between gap-4 bg-navy px-5 py-4 text-white sm:px-6">
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-white/60">Referral details</p>
+                <h2 id="referral-detail-title" className="mt-1 truncate font-display text-lg font-bold">
+                  {selectedReferral.referred_customer?.name || "Invited Traveller"}
+                </h2>
+                <p className="mt-1 text-xs text-white/65">Referred {formatDate(selectedReferral.created_at)}</p>
+              </div>
+              <button
+                type="button"
+                aria-label="Close referral details"
+                onClick={() => setSelectedReferral(null)}
+                className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
+              >
+                <X size={18} />
+              </button>
+            </header>
+            <div className="overflow-y-auto p-5 sm:p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">Referral status</span>
+                <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-wider ${getReferralStatusClass(selectedReferral.status || "PENDING")}`}>
+                  {formatStatus(selectedReferral.status)}
+                </span>
+              </div>
+              <dl className="mt-4 grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+                <ReferralField label="Referral code" value={selectedReferral.referral_code} />
+                <ReferralField label="Customer code" value={selectedReferral.referred_customer?.customer_code} />
+                <ReferralField label="Email" value={selectedReferral.referred_customer?.email} />
+                <ReferralField label="Mobile" value={selectedReferral.referred_customer?.mobile} />
+                <ReferralField label="Reward" value={formatReward(selectedReferral.reward_amount, selectedReferral.currency)} />
+                <ReferralField label="Payment method" value={selectedReferral.payment_method} />
+                <ReferralField label="Booking" value={selectedReferral.referred_customer?.booking_code || selectedReferral.referred_customer?.booking_id} />
+                <ReferralField label="Booking date" value={formatDate(selectedReferral.referred_customer?.booking_date)} />
+                <ReferralField label="Transaction date" value={formatDate(selectedReferral.transaction_date)} />
+                <ReferralField label="Converted at" value={formatDate(selectedReferral.converted_at)} />
+              </dl>
+            </div>
+          </section>
+        </div>
+      )}
 
       {/* FLOATING INVITE CTA BAR */}
       <section className="fixed bottom-4 left-4 right-4 z-40 max-w-3xl mx-auto rounded-2xl bg-navy p-4 text-white shadow-elevated sm:p-5">
