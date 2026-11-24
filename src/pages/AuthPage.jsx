@@ -45,6 +45,18 @@ export default function AuthPage() {
   }, [captureReferral]);
 
   useEffect(() => {
+    const rootOverflow = document.documentElement.style.overflow;
+    const bodyOverflow = document.body.style.overflow;
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.documentElement.style.overflow = rootOverflow;
+      document.body.style.overflow = bodyOverflow;
+    };
+  }, []);
+
+  useEffect(() => {
     const clientId = process.env.REACT_APP_GOOGLE_CLIENT_ID_WEB;
     if (!clientId) {
       setGoogleError("Google sign-in is not configured.");
@@ -199,18 +211,18 @@ export default function AuthPage() {
   const submit = sent ? verify : send;
 
   return (
-    <main className="relative grid min-h-screen min-w-0 max-w-full overflow-x-hidden overflow-y-auto bg-navy px-4 py-12 text-white sm:px-8 sm:py-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,480px)] lg:items-center lg:gap-16 lg:px-20 lg:py-20">
+    <main className="auth-page relative grid min-h-0 min-w-0 max-w-full place-items-center overflow-hidden bg-navy px-3 py-3 text-white sm:px-6 sm:py-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,480px)] lg:gap-16 lg:px-20 lg:py-6">
       <Seo
         title={isSignup ? "Create Account | Gantabyaa" : "Member Login | Gantabyaa"}
         description={isSignup ? "Create a Gantabyaa account to save tours, manage enquiries and access your booking dashboard." : "Sign in to your Gantabyaa account to manage trips, documents and travel plans."}
         path={isSignup ? "/signup" : "/login"}
         robots="noindex,nofollow"
       />
-      <img className="absolute inset-0 h-full w-full object-cover opacity-25" src={AUTH_BG} alt="Mountain landscape" />
-      <div className="absolute inset-0 bg-gradient-to-br from-navy-dark via-navy/90 to-primary-950/80" />
+      <img className="absolute inset-0 h-full w-full object-cover opacity-40" src={AUTH_BG} alt="Mountain landscape" />
+      <div className="absolute inset-0 bg-gradient-to-br from-navy-dark/90 via-navy/75 to-primary-950/70" />
 
       {/* Left Brand Content */}
-      <section className="relative z-10 hidden min-w-0 max-w-xl animate-fade-up lg:block">
+      <section className="relative z-10 hidden min-w-0 max-w-xl pl-8 justify-self-start animate-fade-up lg:block">
         <Link to="/" className="inline-flex items-center gap-2.5 mb-8">
           <img src="/gantabyaa-transparent.png" alt="Gantabyaa" className="h-10 w-10 object-contain" />
           <span className="text-base font-bold text-white">Gantabyaa</span>
@@ -220,19 +232,19 @@ export default function AuthPage() {
           {isSignup ? "Begin Your" : "Welcome Back,"}<br />
           <span className="text-primary-300">{isSignup ? "Dream Journey." : "Traveller."}</span>
         </h1>
-        <p className="mt-4 max-w-md text-sm leading-relaxed text-white/75">
+        <p className="mt-4 max-w-lg text-base leading-relaxed text-white/75">
           Access your saved tours, manage bookings, view travel documents, and unlock member-only holiday discounts.
         </p>
         <div className="mt-8 flex flex-col gap-3">
-          <div className="flex items-center gap-2.5 text-xs text-white/85">
+          <div className="flex items-center gap-2.5 text-sm text-white/85">
             <CheckCircle2 size={16} className="text-primary-300" />
             <span>Instant booking & customized itineraries</span>
           </div>
-          <div className="flex items-center gap-2.5 text-xs text-white/85">
+          <div className="flex items-center gap-2.5 text-sm text-white/85">
             <CheckCircle2 size={16} className="text-primary-300" />
             <span>Secure OTP-based login without remembering passwords</span>
           </div>
-          <div className="flex items-center gap-2.5 text-xs text-white/85">
+          <div className="flex items-center gap-2.5 text-sm text-white/85">
             <CheckCircle2 size={16} className="text-primary-300" />
             <span>24/7 dedicated support for all your trips</span>
           </div>
@@ -240,15 +252,15 @@ export default function AuthPage() {
       </section>
 
       {/* Right Auth Card */}
-      <section className="relative z-10 min-w-0 w-full max-w-[480px] justify-self-center animate-fade-up rounded-2xl border border-white/20 bg-white p-5 text-slate-900 shadow-2xl sm:p-8">
-        <div>
+      <section className="auth-card relative z-10 min-w-0 max-h-full w-full max-w-[420px] justify-self-center animate-fade-up p-3 text-white sm:p-4">
+        <div className="auth-card-header">
           <p className="mb-1 text-xs font-bold uppercase tracking-wider text-accent">
             {isSignup ? "New Account" : "Sign In"}
           </p>
-          <h2 className="font-display text-2xl font-bold text-navy">
+          <h2 className="font-display text-xl font-bold text-white sm:text-2xl">
             {sent ? "Check Your Messages" : isSignup ? "Create Your Account" : "Access Your Account"}
           </h2>
-          <p className="mt-1 text-xs text-slate-500">
+          <p className="mt-1 text-xs text-white/75">
             {sent ? `We sent a 6-digit OTP code to ${identifier}.` : "Enter your email address to continue."}
           </p>
 
@@ -260,14 +272,14 @@ export default function AuthPage() {
           )}
         </div>
 
-        <form className="mt-6 flex flex-col gap-3.5" onSubmit={submit}>
+        <form className="auth-form mt-5 flex flex-col gap-2.5" onSubmit={submit}>
           {!sent && isSignup && (
             <div>
-              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block mb-1" htmlFor="auth-name">
-                Full Name
+              <label className="mb-1 block text-xs font-semibold text-white/90" htmlFor="auth-name">
+                Full name
               </label>
               <input
-                className="h-11 min-w-0 w-full max-w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-xs font-medium outline-none transition focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+                className="h-10 min-w-0 w-full max-w-full rounded-lg border border-white/70 bg-white/95 px-4 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/20 disabled:opacity-60"
                 id="auth-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -279,14 +291,14 @@ export default function AuthPage() {
           )}
 
           <div>
-            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block mb-1" htmlFor="auth-identifier">
-              Email Address
+            <label className="mb-1 block text-xs font-semibold text-white/90" htmlFor="auth-identifier">
+              Email address
             </label>
             <input
               type="email"
               inputMode="email"
               required
-              className="h-11 min-w-0 w-full max-w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-xs font-medium outline-none transition focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+              className="h-10 min-w-0 w-full max-w-full rounded-lg border border-white/70 bg-white/95 px-4 text-sm font-medium text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/20 disabled:opacity-60"
               id="auth-identifier"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
@@ -298,11 +310,11 @@ export default function AuthPage() {
 
           {sent && (
             <div>
-              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block mb-1" htmlFor="auth-otp">
-                Enter 6-Digit OTP
+              <label className="mb-1 block text-xs font-semibold text-white/90" htmlFor="auth-otp">
+                Verification code
               </label>
               <input
-                className="h-11 min-w-0 w-full max-w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 text-center text-base font-bold tracking-widest outline-none transition focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+                className="h-10 min-w-0 w-full max-w-full rounded-lg border border-white/70 bg-white/95 px-4 text-center text-base font-bold tracking-[0.3em] text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/20 disabled:opacity-60"
                 id="auth-otp"
                 value={otp}
                 onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
@@ -317,18 +329,18 @@ export default function AuthPage() {
           )}
 
           <button
-            className="btn-primary mt-2 h-11 w-full justify-center rounded-xl text-xs font-bold shadow-md disabled:cursor-wait disabled:opacity-60"
+            className="btn-primary h-10 w-full justify-center rounded-lg text-sm font-bold shadow-lg shadow-primary/20 transition-transform hover:-translate-y-0.5 disabled:cursor-wait disabled:opacity-60"
             type="submit"
             disabled={busy}
           >
-            {busy ? "Please wait…" : sent ? (isSignup ? "Verify & Register" : "Verify & Sign In") : "Get OTP Code"}
+            {busy ? "Please wait…" : sent ? (isSignup ? "Verify & create account" : "Verify & sign in") : "Send verification code"}
             {!busy && <ArrowRight size={15} />}
           </button>
 
           {sent && (
             <div className="flex flex-col items-center gap-2">
               <button
-                className="text-xs font-semibold text-primary hover:underline disabled:cursor-wait disabled:opacity-60"
+                className="text-xs font-semibold text-primary-300 hover:underline disabled:cursor-wait disabled:opacity-60"
                 type="button"
                 onClick={() => {
                   setSent(false);
@@ -337,12 +349,12 @@ export default function AuthPage() {
                 }}
                 disabled={busy}
               >
-                ← Change Mobile / Email
+                Use a different email address
               </button>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-white/75">
                 Didn&apos;t receive the code?{" "}
                 <button
-                  className="font-semibold text-primary hover:underline disabled:cursor-wait disabled:opacity-60"
+                  className="font-semibold text-primary-300 hover:underline disabled:cursor-wait disabled:opacity-60"
                   type="button"
                   onClick={resend}
                   disabled={busy}
@@ -356,31 +368,31 @@ export default function AuthPage() {
           {error && <p className="rounded-xl bg-rose-50 p-3 text-xs text-rose-600 font-medium" role="alert">{error}</p>}
         </form>
 
-        <div className="my-5 flex items-center gap-3 text-xs text-slate-400">
-          <span className="h-px flex-1 bg-slate-200" />
+        <div className="auth-google-divider my-5 flex items-center gap-3 text-xs text-white/65">
+          <span className="h-px flex-1 bg-white/25" />
           <span>or sign in with</span>
-          <span className="h-px flex-1 bg-slate-200" />
+          <span className="h-px flex-1 bg-white/25" />
         </div>
 
         {googleBusy ? (
-          <div className="flex h-11 items-center justify-center text-xs text-slate-500 font-medium">
+          <div className="flex h-10 items-center justify-center text-xs text-white/75 font-medium">
             Signing in with Google...
           </div>
         ) : (
-          <div className="google-auth-shell relative mx-auto flex min-h-[54px] w-full max-w-[280px] items-center justify-center overflow-hidden p-1">
+          <div className="google-auth-shell relative mx-auto flex min-h-[48px] w-full max-w-[280px] items-center justify-center overflow-hidden p-1">
             <div ref={googleButtonRef} className="flex min-h-10 w-full min-w-0 justify-center" />
             {!googleReady && (
-              <span className={`absolute flex h-10 items-center justify-center text-center text-xs ${googleError ? "text-rose-500" : "text-slate-400"}`}>
+              <span className={`absolute flex h-10 items-center justify-center text-center text-xs ${googleError ? "text-rose-300" : "text-white/75"}`}>
                 {googleError || "Loading Google sign-in..."}
               </span>
             )}
           </div>
         )}
 
-        <p className="mt-5 border-t border-slate-100 pt-4 text-center text-xs text-slate-500">
+        <p className="auth-footer mt-4 border-t border-white/20 pt-4 text-center text-sm text-white/75">
           {isSignup ? "Already have an account? " : "Don't have an account? "}
           <button
-            className="font-bold text-primary hover:underline"
+            className="font-bold text-primary-300 hover:underline"
             type="button"
             onClick={() => navigate(isSignup ? "/login" : "/signup")}
           >

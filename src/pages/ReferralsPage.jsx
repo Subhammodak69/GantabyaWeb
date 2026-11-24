@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Check, ChevronRight, Copy, Folder, Gift, LoaderCircle, X } from "lucide-react";
-import { fetchReferralCode, fetchReferrals, getReferralLink } from "../api";
+import { fetchPublicReferralConfig, fetchReferralCode, fetchReferrals, getReferralLink } from "../api";
 
 const formatDate = (value) => {
   const parsed = new Date(value);
@@ -49,6 +49,9 @@ export default function ReferralsPage() {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
+  const [offerConfig, setOfferConfig] = useState(null);
+  const [offerLoading, setOfferLoading] = useState(true);
+  const [offerError, setOfferError] = useState("");
 
   useEffect(() => {
     Promise.all([fetchReferralCode(), fetchReferrals()])
@@ -60,6 +63,28 @@ export default function ReferralsPage() {
       })
       .catch((err) => setError(err.message || "Could not load referrals."))
       .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    let isActive = true;
+    fetchPublicReferralConfig()
+      .then((response) => {
+        const config = response?.data;
+        if (config?.default_reward_amount == null || config?.booking_window_days == null) {
+          throw new Error("Referral reward details are unavailable.");
+        }
+        if (isActive) setOfferConfig(config);
+      })
+      .catch((err) => {
+        if (isActive) setOfferError(err.message || "Could not load current referral reward details.");
+      })
+      .finally(() => {
+        if (isActive) setOfferLoading(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -114,7 +139,7 @@ export default function ReferralsPage() {
               Invite <span className="text-primary">Friends</span>
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 max-w-md mt-1">
-              Share a private invite link with friends and family to gift them discounts on their next journey.
+              Share your invite link and earn a referral reward when a new customer signs up and completes an eligible booking.
             </p>
           </div>
           <span className="text-xs font-bold text-navy bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-sm w-fit">
@@ -124,13 +149,31 @@ export default function ReferralsPage() {
 
         <section className="card mb-6 p-4 sm:p-5" aria-labelledby="referral-criteria-title">
           <h2 id="referral-criteria-title" className="font-display text-base font-bold text-navy">
-            How to earn a referral reward
+            Your referral reward
           </h2>
-          <ol className="mt-3 grid gap-3 text-xs leading-relaxed text-slate-600 sm:grid-cols-3">
-            <li><span className="font-bold text-navy">1. Invite someone new.</span> Share your referral link with a person who does not already have a Gantabyaa account.</li>
-            <li><span className="font-bold text-navy">2. They sign up through your link.</span> The referral must be connected when they create their account; existing accounts cannot be added later.</li>
-            <li><span className="font-bold text-navy">3. They complete a booking.</span> The referral is reviewed after booking completion. A reward is given only if it is approved; its amount and booking window follow the referral settings.</li>
-          </ol>
+          {offerLoading ? (
+            <p className="mt-3 text-xs text-slate-500">Loading the current referral offer...</p>
+          ) : offerError ? (
+            <p className="mt-3 text-xs font-medium text-rose-600" role="alert">{offerError}</p>
+          ) : offerConfig ? (
+            <>
+              <div className="mt-3 grid gap-3 rounded-xl bg-primary/5 p-3 sm:grid-cols-2">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Reward per eligible referral</p>
+                  <p className="mt-1 text-xl font-bold text-primary">{formatReward(offerConfig.default_reward_amount)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Booking window</p>
+                  <p className="mt-1 text-xl font-bold text-navy">{offerConfig.booking_window_days} days</p>
+                </div>
+              </div>
+              <ol className="mt-3 grid gap-3 text-xs leading-relaxed text-slate-600 sm:grid-cols-3">
+                <li><span className="font-bold text-navy">1. Invite someone new.</span> Share your referral link with someone who does not already have a Gantabyaa account.</li>
+                <li><span className="font-bold text-navy">2. They sign up through your link.</span> The referral must be connected when they create their account; existing accounts cannot be added later.</li>
+                <li><span className="font-bold text-navy">3. They complete an eligible booking.</span> Their booking must be created within {offerConfig.booking_window_days} days after the referral is registered. Once the booking is completed, the reward shown above is credited to your wallet.</li>
+              </ol>
+            </>
+          ) : null}
         </section>
 
         {/* ERROR */}

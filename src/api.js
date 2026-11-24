@@ -226,7 +226,8 @@ async function requestWithRetry(path, options = {}, isRetry = false) {
     path.includes("/sessions/logout") ||
     path.includes("/auth/otp") ||
     path.includes("/auth/google");
-  const isPublicReferralReq = path.includes("/referrals/invite/");
+  const isPublicReferralReq =
+    path.includes("/referrals/invite/") || path === "/api/v1/referrals/config";
 
   const isFormData = options.body instanceof FormData;
   let res = await fetch(BASE_API + path, {
@@ -436,6 +437,7 @@ export async function downloadDocumentFile(id, { fileName = "document", mimeType
 export function deleteDocument(id) { return request(`/api/v1/documents/${encodeURIComponent(id)}`, { method: "DELETE" }, true); }
 export function fetchReferralCode() { return request("/api/v1/referrals/code", {}, true); }
 export function fetchReferrals(page = 1, pageSize = 20) { return request(`/api/v1/referrals?page=${page}&page_size=${pageSize}`, {}, true); }
+export function fetchPublicReferralConfig() { return request("/api/v1/referrals/config"); }
 export function fetchWishlist(page = 1, pageSize = 50, filters = {}) {
   const query = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
   Object.entries(filters).forEach(([key, value]) => {

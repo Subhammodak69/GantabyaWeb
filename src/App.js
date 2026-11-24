@@ -37,13 +37,14 @@ import { useTravel } from "./contexts/TravelContext";
 function Layout({ children }) {
   const location = useLocation();
   const isAuthPage = location.pathname === "/login" || location.pathname === "/signup" || location.pathname === "/invite";
+  const isFullScreenAuthPage = location.pathname === "/login" || location.pathname === "/signup";
   const hero = {
     "/wishlist": { image: "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=2000&q=90", eyebrow: "Saved for later", title: "Journeys Worth", accent: "Keeping.", alt: "Scenic travel destination" },
     "/referrals": { image: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=2000&q=90", eyebrow: "Bring someone along", title: "Travel is Better", accent: "Together.", alt: "Friends travelling together" },
   }[location.pathname];
   return (
-    <main className="min-h-screen flex flex-col bg-slate-50">
-      <Header />
+    <main className={`${isFullScreenAuthPage ? "auth-layout" : "min-h-screen"} flex flex-col bg-slate-50`}>
+      {!isFullScreenAuthPage && <Header />}
       {hero && (
         <section className="relative flex min-h-[260px] items-end overflow-hidden px-4 pb-10 pt-16 text-white sm:px-6 lg:px-12">
           <img className="absolute inset-0 h-full w-full object-cover" src={hero.image} alt={hero.alt} />
@@ -56,7 +57,7 @@ function Layout({ children }) {
           </div>
         </section>
       )}
-      <div className="flex-1">
+      <div className={`flex-1 ${isFullScreenAuthPage ? "min-h-0" : ""}`}>
         {children}
       </div>
       {!isAuthPage && <Footer />}
