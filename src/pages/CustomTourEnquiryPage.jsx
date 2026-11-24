@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { fetchAllDestinations, fetchPackageVariants, fetchPackages } from "../api";
 import { useTravel } from "../contexts/TravelContext";
 import Seo from "../components/Seo";
@@ -51,6 +51,7 @@ const labelClass = "mb-1.5 block text-xs font-bold uppercase tracking-wider text
 
 export default function CustomTourEnquiryPage() {
   const { user, goHome } = useTravel();
+  const location = useLocation();
   const navigate = useNavigate();
   const [form, setForm] = useState(INITIAL);
   const [step, setStep] = useState(1);
@@ -69,6 +70,7 @@ export default function CustomTourEnquiryPage() {
   const [variants, setVariants] = useState([]);
   const [variantsLoading, setVariantsLoading] = useState(false);
   const [variantsError, setVariantsError] = useState("");
+  const customTourPrefill = location.state?.customTourPrefill;
 
   useEffect(() => {
     setForm((current) => ({
@@ -77,6 +79,19 @@ export default function CustomTourEnquiryPage() {
       mobile: user?.mobile || user?.phone || current.mobile,
     }));
   }, [user]);
+
+  useEffect(() => {
+    if (!customTourPrefill?.packageId) return;
+    setSelectionMode("PACKAGE");
+    setForm((current) => ({
+      ...current,
+      package_id: customTourPrefill.packageId,
+      variant_id: customTourPrefill.variantId || "",
+      travel_date: customTourPrefill.travelDate || "",
+      travel_duration_day: customTourPrefill.durationDays || current.travel_duration_day,
+      travel_duration_night: customTourPrefill.durationNights || current.travel_duration_night,
+    }));
+  }, [customTourPrefill]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });

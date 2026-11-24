@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import { useTravel } from "../contexts/TravelContext";
 import usePackages from "../hooks/usePackages";
 import Seo from "../components/Seo";
@@ -19,6 +19,7 @@ const WHATSAPP_NUMBER = CONTACTS.whatsapp?.[0]?.number || "919932204885";
 
 export default function PackageDetailsPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { goHome, isMember, selectedPackage } = useTravel();
   const { pack, loading, error } = usePackages(id, selectedPackage || {});
   const [selected, setSelected] = useState(0);
@@ -211,6 +212,24 @@ export default function PackageDetailsPage() {
 
   const active = variant || pack.seasons?.[selected] || {};
 
+  const handleCustomize = () => {
+    navigate("/custom-tour-enquiry", {
+      state: {
+        customTourPrefill: {
+          packageId: pack.package_id || pack.id || id,
+          variantId: active?.id || "",
+          travelDate: selectedDepartureDate?.departure_date
+            || selectedDepartureDate?.date
+            || active?.dates?.[0]?.departure_date
+            || active?.dates?.[0]?.date
+            || "",
+          durationDays: active?.duration_days || 0,
+          durationNights: active?.duration_nights || 0,
+        },
+      },
+    });
+  };
+
   const handleShareEnquiry = () => {
     if (!pack) return;
 
@@ -389,7 +408,7 @@ export default function PackageDetailsPage() {
           {/* Action Buttons in Hero */}
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <button
-              onClick={() => setEnquiryOpen(true)}
+              onClick={handleCustomize}
               className="btn-accent rounded-xl text-sm font-bold shadow-lg"
             >
               Customise
@@ -537,7 +556,7 @@ export default function PackageDetailsPage() {
                 <span>Share Enquiry</span>
               </button>
               <button
-                onClick={() => setEnquiryOpen(true)}
+                onClick={handleCustomize}
                 className="btn-accent w-full justify-center rounded-xl py-3 text-sm font-bold"
               >
                 Customise
@@ -838,7 +857,7 @@ export default function PackageDetailsPage() {
           </a>
           <button
             id="bottom-customise-btn"
-            onClick={() => setEnquiryOpen(true)}
+            onClick={handleCustomize}
             className="btn-accent rounded-xl text-xs font-bold px-4 py-2"
           >
             Customise
