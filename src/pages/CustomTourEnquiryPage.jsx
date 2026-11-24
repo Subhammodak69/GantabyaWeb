@@ -719,12 +719,12 @@ export default function CustomTourEnquiryPage() {
                         <label className={labelClass}>Trip duration</label>
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <label className="sr-only" htmlFor="custom-page-days">Days</label>
-                            <input id="custom-page-days" type="text" inputMode="numeric" pattern="[0-9]*" value={form.travel_duration_day} onChange={setNumber("travel_duration_day")} className={inputClass} placeholder="Days" />
+                            <label className="mb-1.5 block text-xs font-semibold text-slate-600" htmlFor="custom-page-days">Days</label>
+                            <input id="custom-page-days" type="text" inputMode="numeric" pattern="[0-9]*" value={form.travel_duration_day} onChange={setNumber("travel_duration_day")} className={inputClass} placeholder="Enter days" />
                           </div>
                           <div>
-                            <label className="sr-only" htmlFor="custom-page-nights">Nights</label>
-                            <input id="custom-page-nights" type="text" inputMode="numeric" pattern="[0-9]*" value={form.travel_duration_night} onChange={setNumber("travel_duration_night")} className={inputClass} placeholder="Nights" />
+                            <label className="mb-1.5 block text-xs font-semibold text-slate-600" htmlFor="custom-page-nights">Nights</label>
+                            <input id="custom-page-nights" type="text" inputMode="numeric" pattern="[0-9]*" value={form.travel_duration_night} onChange={setNumber("travel_duration_night")} className={inputClass} placeholder="Enter nights" />
                           </div>
                         </div>
                       </div>
