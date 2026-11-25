@@ -159,6 +159,12 @@ export default function PackageCard({ pack, index }) {
         packageSlug={pack.slug || pack.id}
         variantId={pack.default_variant_id || ""}
         packageTitle={pack.title}
+        packageDestination={pack.destination || ""}
+        variantName={pack.season_name || ""}
+        variantPrice={pack.starting_price || pack.price || 0}
+        durationDays={pack.duration_days || 0}
+        durationNights={pack.duration_nights || 0}
+        packageImage={pack.image || pack.cover_image || ""}
         destinationId={pack.destination_id || ""}
       />
     </>

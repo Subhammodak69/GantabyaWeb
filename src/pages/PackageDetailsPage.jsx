@@ -831,6 +831,9 @@ export default function PackageDetailsPage() {
         packageSlug={pack.slug || id}
         variantId={active?.id || ""}
         packageTitle={pack.title}
+        packageDestination={pack.destination || ""}
+        variantName={active?.name || active?.season_name || ""}
+        variantPrice={active?.starting_price || active?.price || 0}
         destinationId={pack.destination_id || ""}
         travelDate={selectedDepartureDate?.departure_date || selectedDepartureDate?.date || active?.dates?.[0]?.date || ""}
         durationDays={active?.duration_days || 0}
