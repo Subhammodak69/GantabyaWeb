@@ -28,9 +28,6 @@ const ROOM_TYPES = [
   { value: "EXECUTIVE", label: "Executive" },
   { value: "PRESIDENTIAL", label: "Presidential" },
 ];
-const ENQUIRY_TYPE_OPTIONS = Object.values(enums.EnquiryType).filter(
-  (type) => type !== "FIXED_TOUR" && type !== "FIXED TOUR"
-);
 const WHATSAPP_NUMBER = CONTACTS.whatsapp?.[0]?.number || "919932204885";
 const STEPS = [
   { id: 1, title: "Contact details", description: "Who should we contact?" },
@@ -62,7 +59,6 @@ const INITIAL = {
   vehicle_type: "ANY",
   meal_plan: "ANY",
   special_requirements: "",
-  enquiry_type: "CUSTOM_TOUR",
 };
 
 const inputClass = "h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 text-sm font-medium text-slate-800 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20";
@@ -327,7 +323,7 @@ export default function CustomTourEnquiryPage() {
         "Hello Gantabyaa team! 👋",
         "",
         "I would like to plan a custom tour:",
-        `Enquiry type: ${form.enquiry_type || "CUSTOM_TOUR"}`,
+        "Enquiry type: CUSTOM_TOUR",
         `Name: ${form.name.trim()}`,
         `Mobile / WhatsApp: ${form.mobile.trim()}`,
         `Email: ${form.email.trim() || "Not provided"}`,
@@ -797,11 +793,12 @@ export default function CustomTourEnquiryPage() {
                         <label className={labelClass} htmlFor="custom-page-category">Tour category</label>
                         <CustomSelect
                           id="custom-page-category"
-                          value={form.enquiry_type}
-                          options={ENQUIRY_TYPE_OPTIONS.map((type) => ({ label: type.replace(/_/g, " "), value: type }))}
-                          onChange={(value) => setForm((current) => ({ ...current, enquiry_type: value }))}
-                          placeholder="Select category"
+                          ariaLabel="Tour category"
+                          value="CUSTOM_TOUR"
+                          options={[{ label: "CUSTOM TOUR", value: "CUSTOM_TOUR" }]}
+                          placeholder="Custom Tour"
                           triggerClassName={selectClass}
+                          disabled
                         />
                       </div>
                       <div>
