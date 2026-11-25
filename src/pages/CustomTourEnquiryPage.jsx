@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { fetchAllDestinations, fetchPackageVariants, fetchPackages } from "../api";
 import { useTravel } from "../contexts/TravelContext";
 import Seo from "../components/Seo";
+import CustomDatePicker from "../components/CustomDatePicker";
 import CustomSelect from "../components/CustomSelect";
 import enums from "../utils/enums.json";
 import { ArrowLeft, ArrowRight, Check, MapPin, Search, Sparkle } from "lucide-react";
@@ -746,7 +747,15 @@ export default function CustomTourEnquiryPage() {
                             triggerClassName={selectClass}
                           />
                         ) : (
-                          <input id="custom-page-date" type="date" value={form.travel_date} onChange={setField("travel_date")} className={inputClass} />
+                          <CustomDatePicker
+                            id="custom-page-date"
+                            value={form.travel_date}
+                            onChange={(value) => setForm((current) => ({ ...current, travel_date: value }))}
+                            placeholder="Choose a departure date"
+                            ariaLabel="Choose preferred departure date"
+                            className="w-full"
+                            triggerClassName="h-11 px-3.5 text-sm"
+                          />
                         )}
                       </div>
                       <div>

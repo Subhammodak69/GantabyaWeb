@@ -2,6 +2,12 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, CalendarDays, CheckCircle2, FileText, LoaderCircle, Plus, Trash2, X, XCircle } from "lucide-react";
 import { acceptQuotation, fetchEnquiryQuotations, rejectQuotation } from "../api";
+import CustomDatePicker from "../components/CustomDatePicker";
+
+function getTodayDateValue() {
+  const today = new Date();
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+}
 
 function getQuotations(response) {
   const data = response?.data;
@@ -250,7 +256,20 @@ export default function EnquiryQuotationsPage() {
                       <div className="grid gap-3 sm:grid-cols-2">
                         <label className="sm:col-span-2"><span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">Full name *</span><input required value={traveller.full_name} onChange={(event) => updateTraveller(index, "full_name", event.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-primary" placeholder="As shown on ID" /></label>
                         <label><span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">Gender</span><input value={traveller.gender} onChange={(event) => updateTraveller(index, "gender", event.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-primary" placeholder="Optional" /></label>
-                        <label><span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">Date of birth</span><input type="date" value={traveller.date_of_birth} onChange={(event) => updateTraveller(index, "date_of_birth", event.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-primary" /></label>
+                        <label>
+                          <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">Date of birth</span>
+                          <CustomDatePicker
+                            id={`traveller-dob-${index}`}
+                            value={traveller.date_of_birth}
+                            onChange={(value) => updateTraveller(index, "date_of_birth", value)}
+                            placeholder="Choose date of birth"
+                            ariaLabel="Choose traveller date of birth"
+                            minDate="1900-01-01"
+                            maxDate={getTodayDateValue()}
+                            className="w-full"
+                            triggerClassName="h-10 bg-white text-sm"
+                          />
+                        </label>
                         <label><span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">Mobile</span><input type="tel" value={traveller.mobile} onChange={(event) => updateTraveller(index, "mobile", event.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-primary" /></label>
                         <label><span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">Email</span><input type="email" value={traveller.email} onChange={(event) => updateTraveller(index, "email", event.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-primary" /></label>
                         <label className="sm:col-span-2"><span className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-500">Relationship to customer</span><input value={traveller.relationship_to_customer} onChange={(event) => updateTraveller(index, "relationship_to_customer", event.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-primary" placeholder={index === 0 ? "Self" : "e.g. Spouse, child"} /></label>

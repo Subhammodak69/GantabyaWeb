@@ -38,6 +38,9 @@ export default function CustomDatePicker({
   placeholder = "Select a date",
   className = "",
   triggerClassName = "",
+  ariaLabel = "Choose date",
+  minDate = "",
+  maxDate = "",
 }) {
   const triggerRef = useRef(null);
   const popoverRef = useRef(null);
@@ -50,8 +53,8 @@ export default function CustomDatePicker({
   const year = visibleMonth.getFullYear();
   const month = visibleMonth.getMonth();
   const currentYear = new Date().getFullYear();
-  const firstYear = Math.min(currentYear - 10, year);
-  const lastYear = Math.max(currentYear + 10, year);
+  const firstYear = Math.min(minDate ? parseDate(minDate)?.getFullYear() ?? currentYear - 10 : currentYear - 10, year);
+  const lastYear = Math.max(maxDate ? parseDate(maxDate)?.getFullYear() ?? currentYear + 10 : currentYear + 10, year);
   const yearOptions = Array.from({ length: lastYear - firstYear + 1 }, (_, index) => {
     const optionYear = firstYear + index;
     return { label: String(optionYear), value: optionYear };
@@ -103,7 +106,7 @@ export default function CustomDatePicker({
     <div
       ref={popoverRef}
       role="dialog"
-      aria-label="Choose travel date"
+      aria-label={ariaLabel}
       className="fixed z-[10020] w-72 rounded-2xl border border-slate-200 bg-white p-3 shadow-2xl"
       style={position}
     >
@@ -140,17 +143,22 @@ export default function CustomDatePicker({
           const dateValue = toDateValue(date);
           const isSelected = dateValue === value;
           const isToday = dateValue === toDateValue(new Date());
+          const isDisabled = (minDate && dateValue < minDate) || (maxDate && dateValue > maxDate);
           return (
             <button
               key={day}
               type="button"
+              disabled={isDisabled}
               aria-pressed={isSelected}
+              aria-label={date.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
               onClick={() => {
                 onChange?.(dateValue);
                 setOpen(false);
               }}
               className={`grid h-8 w-8 place-items-center justify-self-center rounded-lg text-xs font-medium transition ${
-                isSelected
+                isDisabled
+                  ? "cursor-not-allowed text-slate-300"
+                  : isSelected
                   ? "bg-primary text-white"
                   : isToday
                     ? "border border-primary text-primary hover:bg-primary-50"
@@ -172,6 +180,7 @@ export default function CustomDatePicker({
         ref={triggerRef}
         id={id}
         type="button"
+        aria-label={ariaLabel}
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => {
