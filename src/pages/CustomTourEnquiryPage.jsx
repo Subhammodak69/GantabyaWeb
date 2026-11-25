@@ -603,7 +603,6 @@ export default function CustomTourEnquiryPage() {
                               const packageId = item.package_id || item.id;
                               const selected = form.package_id === packageId;
                               const image = item.image || item.cover_image || item.banner?.image;
-                              const price = item.price ?? item.starting_price ?? item.selling_price;
                               return (
                                 <button
                                   key={packageId}
@@ -631,7 +630,6 @@ export default function CustomTourEnquiryPage() {
                                     <p className="mt-1 truncate text-xs text-slate-500">{item.destination || "Destination details unavailable"}</p>
                                     <div className="mt-3 flex items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                                       <span>{item.type ? item.type.replace(/_/g, " ") : "Tour package"}</span>
-                                      {Number(price) > 0 && <span className="text-primary">From ₹{Number(price).toLocaleString("en-IN")}</span>}
                                     </div>
                                   </div>
                                 </button>
@@ -660,7 +658,6 @@ export default function CustomTourEnquiryPage() {
                               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                                 {variants.map((variant) => {
                                   const selected = form.variant_id === variant.id;
-                                  const price = variant.selling_price ?? variant.list_price ?? variant.price;
                                   return (
                                     <button
                                       key={variant.id}
@@ -682,9 +679,6 @@ export default function CustomTourEnquiryPage() {
                                         <span className="mt-1 block text-[11px] text-slate-500">
                                           Valid {variant.valid_from || "anytime"}{variant.valid_to ? ` – ${variant.valid_to}` : ""}
                                         </span>
-                                      )}
-                                      {Number(price) > 0 && (
-                                        <span className="mt-3 block text-sm font-bold text-primary">₹{Number(price).toLocaleString("en-IN")}</span>
                                       )}
                                     </button>
                                   );

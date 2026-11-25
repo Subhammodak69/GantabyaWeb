@@ -322,12 +322,6 @@ export default function PackageDetailsPage() {
     }
   };
 
-  const displayPrice = active.price != null && !isNaN(active.price) && active.price > 0
-    ? `₹${Number(active.price).toLocaleString("en-IN")}`
-    : pack.price != null && !isNaN(pack.price) && pack.price > 0
-    ? `₹${Number(pack.price).toLocaleString("en-IN")}`
-    : null;
-
   return (
     <div className="bg-slate-50 pb-28">
       <Seo
@@ -396,11 +390,6 @@ export default function PackageDetailsPage() {
               <span className="flex items-center gap-1.5 font-medium">
                 <Clock size={16} className="text-primary-300" />
                 <span>{active.duration}</span>
-              </span>
-            )}
-            {displayPrice && (
-              <span className="font-bold text-accent-300 text-lg sm:text-xl">
-                {displayPrice} <span className="text-xs font-normal text-white/70">/person</span>
               </span>
             )}
           </div>
@@ -497,10 +486,7 @@ export default function PackageDetailsPage() {
                   )}
                 </div>
                 <h3 className="mt-1 font-display text-base font-bold text-navy">{option.season_name || option.name}</h3>
-                <div className="mt-3 flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100">
-                  <span className="font-bold text-navy">
-                    {option.price ? `₹${Number(option.price).toLocaleString("en-IN")}` : "Contact for Price"}
-                  </span>
+                <div className="mt-3 border-t border-slate-100 pt-2 text-xs text-slate-500">
                   <span>{option.duration || ""}</span>
                 </div>
               </button>
@@ -837,12 +823,6 @@ export default function PackageDetailsPage() {
 
       {/* Sticky Bottom Booking Bar */}
       <div className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-between gap-3 border-t border-slate-200 bg-white/95 px-4 py-3 shadow-elevated backdrop-blur-md sm:px-6 lg:px-12">
-        <div className="hidden sm:block">
-          <p className="text-xs font-bold text-navy truncate max-w-md">{pack.title}</p>
-          <p className="text-xs text-slate-500">
-            Starting from <span className="font-bold text-primary">{displayPrice || "Contact Us"}</span>
-          </p>
-        </div>
         <div className="flex items-center gap-2 ml-auto">
           <a
             href="#share-enquiry"

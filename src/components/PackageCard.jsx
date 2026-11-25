@@ -41,12 +41,6 @@ export default function PackageCard({ pack, index }) {
     }
   };
 
-  const formattedPrice = pack.price != null && !isNaN(pack.price) && pack.price > 0
-    ? `₹${Number(pack.price).toLocaleString("en-IN")}`
-    : pack.starting_price != null && !isNaN(pack.starting_price) && pack.starting_price > 0
-    ? `₹${Number(pack.starting_price).toLocaleString("en-IN")}`
-    : null;
-
   return (
     <>
       <article
@@ -137,17 +131,7 @@ export default function PackageCard({ pack, index }) {
           </div>
 
           {/* Pricing & CTA */}
-          <div className="mt-3.5 pt-3 border-t border-slate-100 flex items-center justify-between">
-            <div>
-              <span className="block text-[9px] font-medium uppercase tracking-wider text-slate-400">
-                Starting from
-              </span>
-              <p className="font-display text-base font-bold text-navy">
-                {formattedPrice || <span className="text-xs text-primary font-semibold">On Request</span>}
-                {formattedPrice && <span className="text-[10px] font-normal text-slate-400"> /person</span>}
-              </p>
-            </div>
-
+          <div className="mt-3.5 flex items-center justify-end border-t border-slate-100 pt-3">
             <div className="flex items-center gap-1.5">
               <button
                 id={`enquire-btn-${pack.id}`}
