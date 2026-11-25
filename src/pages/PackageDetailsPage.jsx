@@ -13,9 +13,6 @@ import Reviews from "../components/Reviews";
 import EnquiryModal from "../components/EnquiryModal";
 import CustomSelect from "../components/CustomSelect";
 import DepartureDateModal from "../components/DepartureDateModal";
-import CONTACTS from "../config/contacts.json";
-
-const WHATSAPP_NUMBER = CONTACTS.whatsapp?.[0]?.number || "919932204885";
 
 export default function PackageDetailsPage() {
   const { id } = useParams();
@@ -232,38 +229,7 @@ export default function PackageDetailsPage() {
 
   const handleShareEnquiry = () => {
     if (!pack) return;
-
-    const selectedDate = selectedDepartureDate?.departure_date
-      || selectedDepartureDate?.date
-      || active?.dates?.[0]?.departure_date
-      || active?.dates?.[0]?.date
-      || "Upcoming departure";
-    const variantName = active?.name || active?.season_name || "Selected package option";
-    // Keep this in sync with the hero image source so the WhatsApp enquiry
-    // always carries the same package banner the customer just viewed.
-    const imageUrl = active?.cover_image
-      || active?.banner?.image
-      || pack?.image
-      || pack?.cover_image
-      || pack?.banner?.image
-      || "";
-    const message = [
-      "Hello Gantabyaa team! 👋",
-      "",
-      "I would like to enquire about this tour package:",
-      `Package: ${pack.title}`,
-      `Variant: ${variantName}`,
-      `Departure date: ${selectedDate}`,
-      imageUrl ? `Package image: ${imageUrl}` : "",
-      "",
-      "Please share availability, pricing and booking details.",
-    ].filter(Boolean).join("\n");
-
-    window.open(
-      `https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g, "")}?text=${encodeURIComponent(message)}`,
-      "_blank",
-      "noopener,noreferrer",
-    );
+    setEnquiryOpen(true);
   };
   const route = (active.route || pack.route || []).map((place) => place.city || place.place || place).join(" → ");
 

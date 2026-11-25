@@ -194,7 +194,7 @@ export default function EnquiryModal({
       const whatsappMessage = [
         "Hello Gantabyaa team! 👋",
         "",
-        "I would like to customise this tour package:",
+        "I would like to enquire about this tour package:",
         `Package: ${packageTitle || "Tour package"}`,
         `Enquiry source: ${form.channel || "WEBSITE"}`,
         `Variant: ${selectedVariantName}`,
@@ -323,16 +323,25 @@ export default function EnquiryModal({
                     required
                   />
                 </div>
+                <div className="sm:col-span-2">
+                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-700" htmlFor="enq-email">
+                    Email
+                  </label>
+                  <input
+                    id="enq-email"
+                    type="email"
+                    value={form.email}
+                    onChange={set("email")}
+                    placeholder="you@example.com"
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs outline-none transition focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
               </div>
               )}
 
               {step === 2 && (
               <>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-700" htmlFor="enq-email">Email</label>
-                  <input id="enq-email" type="email" value={form.email} onChange={set("email")} placeholder="you@example.com" className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs outline-none transition focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20" />
-                </div>
+              <div>
                 <div>
                   <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-700" htmlFor="enq-date">Departure Date</label>
                   <CustomSelect
