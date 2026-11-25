@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import { Award, RefreshCw } from "lucide-react";
+import { Award, BarChart3, RefreshCw, TrendingUp, Users } from "lucide-react";
 import Seo from "../components/Seo";
 import { fetchAccountPoints, fetchPublicRanking } from "../api";
 import { useTravel } from "../contexts/TravelContext";
+import heroLandscape from "../assets/hero-landscape.svg";
 
 const PAGE_SIZE = 10;
 
@@ -86,12 +87,24 @@ export default function LeaderboardPage() {
     document.getElementById(`leaderboard-rank-${myRank}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [myRank, customers]);
 
+  const visiblePointValues = customers
+    .map((customer) => Number(customer.point_balance))
+    .filter(Number.isFinite);
+  const highestVisiblePoints = visiblePointValues.length ? Math.max(...visiblePointValues) : null;
+  const averageVisiblePoints = visiblePointValues.length
+    ? visiblePointValues.reduce((total, points) => total + points, 0) / visiblePointValues.length
+    : null;
+  const chartEntries = customers.slice(0, 5);
+  const chartMaxPoints = Math.max(0, ...chartEntries.map((customer) => Number(customer.point_balance) || 0));
+
   return (
     <>
       <Seo title="Travelers Leaderboard | Gantabyaa" description="Explore the public Gantabyaa travel points leaderboard and celebrate our top travelers." path="/leaderboard" />
       <main className="min-h-screen bg-slate-50 pb-12">
-        <section className="bg-navy px-4 py-12 text-white sm:px-6 lg:px-12">
-          <div className="mx-auto max-w-4xl text-center">
+        <section className="relative isolate overflow-hidden bg-navy px-4 py-12 text-white sm:px-6 lg:px-12">
+          <img src={heroLandscape} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-r from-navy/80 via-navy/55 to-navy/70" />
+          <div className="relative z-10 mx-auto max-w-4xl text-center">
             <Award className="mx-auto text-amber-300" size={34} />
             <p className="mt-4 text-xs font-bold uppercase tracking-[0.18em] text-primary-200">Gantabyaa community</p>
             <h1 className="mt-2 font-display text-3xl font-extrabold text-white sm:text-4xl">Travelers leaderboard</h1>
@@ -99,8 +112,76 @@ export default function LeaderboardPage() {
           </div>
         </section>
 
-        <div className="mx-auto max-w-4xl px-4 sm:px-6">
-          <section className="-mt-4 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <section className="-mt-4 mb-8 pt-5">
+            <div className="flex items-center gap-2">
+              <BarChart3 size={18} className="text-primary" />
+              <div>
+                <p className="eyebrow">Leaderboard insights</p>
+                <h2 className="font-display text-lg font-extrabold text-navy">Community statistics</h2>
+              </div>
+            </div>
+
+            <div className="mt-4 grid divide-y divide-slate-200 border-y border-slate-200 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+              <div className="py-4 sm:pr-5">
+                <div className="flex items-center gap-2 text-slate-500">
+                  <Users size={16} className="text-primary" />
+                  <p className="text-xs font-bold">Travelers ranked</p>
+                </div>
+                <p className="mt-2 font-display text-2xl font-black text-navy">
+                  {pagination?.total_items ?? (customers.length || "—")}
+                </p>
+              </div>
+              <div className="py-4 sm:px-5">
+                <div className="flex items-center gap-2 text-slate-500">
+                  <Award size={16} className="text-amber-500" />
+                  <p className="text-xs font-bold">Highest score shown</p>
+                </div>
+                <p className="mt-2 font-display text-2xl font-black text-navy">
+                  {highestVisiblePoints === null ? "—" : formatPoints(highestVisiblePoints)}
+                </p>
+              </div>
+              <div className="py-4 sm:pl-5">
+                <div className="flex items-center gap-2 text-slate-500">
+                  <TrendingUp size={16} className="text-emerald-600" />
+                  <p className="text-xs font-bold">Average points shown</p>
+                </div>
+                <p className="mt-2 font-display text-2xl font-black text-navy">
+                  {averageVisiblePoints === null ? "—" : formatPoints(averageVisiblePoints)}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <div className="mb-4 flex items-end justify-between gap-3">
+                <h3 className="text-sm font-extrabold text-navy">Points comparison</h3>
+                <p className="text-right text-xs text-slate-400">Top five travelers currently shown</p>
+              </div>
+              {chartEntries.length ? (
+                <div className="space-y-4" role="img" aria-label="Bar chart comparing points for the top five travelers currently shown">
+                  {chartEntries.map((customer) => {
+                    const points = Number(customer.point_balance) || 0;
+                    const width = chartMaxPoints > 0 ? Math.max(3, (points / chartMaxPoints) * 100) : 0;
+                    return (
+                      <div key={`${customer.rank}-${customer.customer_name}`} className="grid grid-cols-[minmax(5rem,8rem)_1fr_auto] items-center gap-3">
+                        <span className="truncate text-xs font-semibold text-slate-600">{customer.customer_name || "Traveler"}</span>
+                        <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
+                          <div className="h-full rounded-full bg-gradient-to-r from-primary to-sky-400 transition-all" style={{ width: `${width}%` }} />
+                        </div>
+                        <span className="min-w-12 text-right text-xs font-extrabold text-primary">{formatPoints(points)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="py-4 text-center text-sm text-slate-400">
+                  {loading ? "Loading leaderboard statistics…" : "Statistics will appear when leaderboard data is available."}
+                </p>
+              )}
+            </div>
+          </section>
+
+          <section className="bg-white">
             <div className="flex items-center justify-between border-b border-slate-100 px-4 py-4 sm:px-6">
               <div><p className="eyebrow">Public ranking</p><h2 className="font-display text-lg font-extrabold text-navy">Top travelers</h2></div>
               <div className="flex items-center gap-2">
