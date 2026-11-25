@@ -130,7 +130,7 @@ export default function PackageCard({ pack, index }) {
             </h3>
           </div>
 
-          {/* Pricing & CTA */}
+          {/* Enquiry CTA */}
           <div className="mt-3.5 flex items-center justify-end border-t border-slate-100 pt-3">
             <div className="flex items-center gap-1.5">
               <button
