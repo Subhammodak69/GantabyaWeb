@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { fetchPackageVariants, fetchVariant } from "../api";
+import { fetchPackageVariants } from "../api";
 import { useTravel } from "../contexts/TravelContext";
 import CustomSelect from "./CustomSelect";
 import enums from "../utils/enums.json";
@@ -9,11 +9,33 @@ import CONTACTS from "../config/contacts.json";
 
 const MEAL_OPTIONS = ["ANY", ...Object.values(enums.MealPlan)];
 const VEHICLE_OPTIONS = ["ANY", ...Object.values(enums.VehicleType)];
+const HOTEL_CATEGORIES = [
+  { value: "BUDGET", label: "Budget" },
+  { value: "STANDARD", label: "Standard" },
+  { value: "DELUXE", label: "Deluxe" },
+  { value: "LUXURY", label: "Luxury" },
+];
+const ROOM_TYPES = [
+  { value: "SINGLE", label: "Single" },
+  { value: "DOUBLE", label: "Double" },
+  { value: "TWIN", label: "Twin" },
+  { value: "TRIPLE", label: "Triple" },
+  { value: "FAMILY", label: "Family" },
+  { value: "SUITE", label: "Suite" },
+  { value: "DELUXE", label: "Deluxe" },
+  { value: "EXECUTIVE", label: "Executive" },
+  { value: "PRESIDENTIAL", label: "Presidential" },
+];
+const STEPS = [
+  { id: 1, title: "Contact details", description: "Who should we contact?" },
+  { id: 2, title: "Travel plans", description: "Dates and travellers" },
+  { id: 3, title: "Preferences", description: "Stay, transport and budget" },
+];
 const WHATSAPP_NUMBER = CONTACTS.whatsapp?.[0]?.number || "919932204885";
 const INITIAL = {
   name: "", mobile: "", email: "", channel: "WEBSITE", subject: "", message: "", variant_id: "", travel_date: "",
   adult_count: 1, child_count: 0, senior_count: 0,
-  vehicle_type: "ANY", room_count: 0, vehicle_count: 0, budget_min: 0, budget_max: 0,
+  vehicle_type: "ANY", room_count: 0, room_type: "", hotel_category: "", vehicle_count: 0, budget_min: 0, budget_max: 0,
   special_requirements: "", meal_plan: "ANY",
 };
 
@@ -62,14 +84,16 @@ export default function EnquiryModal({
   const travelDurationNight = variantDuration(selectedVariant, "duration_nights", durationNights, "N");
   const [status, setStatus] = useState("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const [step, setStep] = useState(1);
   const firstRef = useRef(null);
-  const overlayRef = useRef(null);
+  const submitRequested = useRef(false);
 
   useEffect(() => {
     if (!open) return;
 
     let isMounted = true;
     const lookupKey = packageSlug || packageId;
+    setVariants([]);
 
     if (lookupKey) {
       fetchPackageVariants(lookupKey)
@@ -112,12 +136,15 @@ export default function EnquiryModal({
         senior_count: 0,
         vehicle_type: "ANY",
         room_count: 0,
+        room_type: "",
+        hotel_category: "",
         vehicle_count: 0,
         budget_min: 0,
         budget_max: 0,
         special_requirements: "",
         meal_plan: "ANY",
       });
+      setStep(1);
       setStatus("idle");
       setErrorMsg("");
       setTimeout(() => firstRef.current?.focus(), 50);
@@ -143,22 +170,6 @@ export default function EnquiryModal({
     }
   };
 
-  const handleVariantChange = async (value) => {
-    setForm((f) => ({ ...f, variant_id: value, travel_date: "" }));
-    const selected = variants.find((item) => item.id === value);
-    const lookupKey = packageSlug || packageId;
-    if (!selected || selected.dates?.length || !lookupKey) return;
-
-    try {
-      const detailed = await fetchVariant(lookupKey, selected.slug || selected.variant_slug || selected.key || value, variants);
-      setVariants((current) => current.map((item) => (
-        item.id === value || item.id === detailed.id ? detailed : item
-      )));
-    } catch {
-      // Keep the variant option available even if its detail request fails.
-    }
-  };
-
   const departureDateOptions = (selectedVariant?.dates || [])
     .filter((date) => date.date || date.departure_date)
     .map((date) => {
@@ -169,6 +180,9 @@ export default function EnquiryModal({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (step !== STEPS.length || !submitRequested.current) return;
+    submitRequested.current = false;
+
     if (!form.name.trim() || !form.mobile.trim()) {
       setErrorMsg("Name and mobile number are required.");
       return;
@@ -192,6 +206,8 @@ export default function EnquiryModal({
         `Travel duration: ${travelDurationDay} days / ${travelDurationNight} nights`,
         `Vehicle type: ${form.vehicle_type || "ANY"}`,
         `Rooms: ${form.room_count || 0}`,
+        `Hotel category: ${HOTEL_CATEGORIES.find((option) => option.value === form.hotel_category)?.label || "Not selected"}`,
+        `Room type: ${ROOM_TYPES.find((option) => option.value === form.room_type)?.label || "Not selected"}`,
         `Vehicles: ${form.vehicle_count || 0}`,
         `Budget: ${form.budget_min || 0} - ${form.budget_max || 0}`,
         `Meal plan: ${form.meal_plan || "ANY"}`,
@@ -212,50 +228,71 @@ export default function EnquiryModal({
     }
   };
 
+  const goNext = () => {
+    if (step === 1 && (!form.name.trim() || !form.mobile.trim())) {
+      setErrorMsg("Name and mobile number are required to continue.");
+      return;
+    }
+    setErrorMsg("");
+    setStep((current) => Math.min(current + 1, STEPS.length));
+  };
+  const goPrevious = () => {
+    setErrorMsg("");
+    setStep((current) => Math.max(current - 1, 1));
+  };
+
   if (!open) return null;
 
   return createPortal(
     <div
-      ref={overlayRef}
-      className="modal-viewport fixed inset-0 z-[9999] flex items-end justify-center sm:items-center p-0 sm:p-4"
+      className="fixed inset-0 z-[9999] min-h-screen overflow-y-auto bg-slate-50"
       role="dialog"
       aria-modal="true"
       aria-labelledby="enquiry-modal-title"
-      onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
     >
-      <div className="absolute inset-0 bg-navy-dark/75 backdrop-blur-sm" style={{ animation: "fadeInBg 0.2s ease forwards" }} />
-
-      <div
-        className="modal-panel relative z-10 flex flex-col w-full max-w-lg max-h-[90vh] rounded-t-2xl sm:rounded-2xl bg-white shadow-2xl overflow-hidden"
-        style={{ animation: "slideUpPanel 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards" }}
-      >
+      <div className="flex min-h-screen w-full flex-col bg-slate-50">
         {/* Header */}
-        <div className="relative shrink-0 bg-navy px-6 py-4 text-white border-b border-navy-light flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-accent-300">Quick Holiday Enquiry</p>
-            <h2 id="enquiry-modal-title" className="font-display text-base font-bold text-white truncate max-w-sm">
-              {packageTitle || "Send Travel Enquiry"}
-            </h2>
+        <div className="shrink-0 border-b border-navy-light bg-navy px-4 py-4 text-white sm:px-6">
+          <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-accent-300">Holiday enquiry</p>
+              <h2 id="enquiry-modal-title" className="truncate font-display text-base font-bold text-white sm:text-lg">
+                {packageTitle || "Send Travel Enquiry"}
+              </h2>
+            </div>
+            <button
+              onClick={onClose}
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/10 text-white transition hover:bg-white/20"
+              aria-label="Close enquiry"
+            >
+              <X size={18} />
+            </button>
           </div>
-          <button
-            onClick={onClose}
-            className="grid h-8 w-8 place-items-center rounded-lg bg-white/10 text-white transition hover:bg-white/20"
-            aria-label="Close modal"
-          >
-            <X size={16} />
-          </button>
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 py-6 sm:px-6 lg:px-8">
           {status === "success" ? (
-            <div className="flex flex-col items-center py-6 text-center">
+            <div className="flex flex-1 flex-col items-center justify-center py-12 text-center">
               <span className="mb-3 grid h-14 w-14 place-items-center rounded-full bg-green-100 text-2xl text-success font-bold">✓</span>
               <h3 className="font-display text-xl font-bold text-navy">Enquiry Ready in WhatsApp!</h3>
-              <p className="mt-2 text-xs text-slate-500 max-w-xs">Your complete enquiry is prepared in WhatsApp. Please press Send to share it with our holiday team.</p>
+              <p className="mt-2 max-w-md text-sm text-slate-500">Your complete enquiry is prepared in WhatsApp. Please press Send to share it with our holiday team.</p>
             </div>
           ) : (
-            <form id="enquiry-form" onSubmit={handleSubmit} noValidate className="grid gap-3.5">
+            <>
+            <div className="mb-6 w-full max-w-4xl self-center">
+              <div className="mb-2 flex items-center justify-between text-xs font-semibold text-slate-500">
+                <span>Step {step} of {STEPS.length} · {STEPS[step - 1].title}</span>
+                <span>{Math.round((step / STEPS.length) * 100)}%</span>
+              </div>
+              <div className="h-1.5 overflow-hidden rounded-full bg-slate-200" role="progressbar" aria-label="Enquiry progress" aria-valuemin={1} aria-valuemax={STEPS.length} aria-valuenow={step}>
+                <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${(step / STEPS.length) * 100}%` }} />
+              </div>
+              <h3 className="mt-5 font-display text-2xl font-bold text-navy">{STEPS[step - 1].title}</h3>
+              <p className="mt-1 text-sm text-slate-500">{STEPS[step - 1].description}</p>
+            </div>
+            <form id="enquiry-form" onSubmit={handleSubmit} noValidate className="mx-auto grid w-full max-w-4xl gap-5">
+                {step === 1 && (
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-700" htmlFor="enq-name">
@@ -287,7 +324,10 @@ export default function EnquiryModal({
                   />
                 </div>
               </div>
+              )}
 
+              {step === 2 && (
+              <>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-700" htmlFor="enq-email">Email</label>
@@ -330,26 +370,11 @@ export default function EnquiryModal({
                   </div>
                 ))}
               </div>
-
-              {variants.length > 0 && (
-                <div>
-                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-700" htmlFor="enq-variant">
-                    Tour Variant / Season
-                  </label>
-                  <CustomSelect
-                    value={form.variant_id}
-                    options={variants.map((v) => ({
-                      label: `${v.name || v.season_name}${v.season_name && v.name && v.name !== v.season_name ? ` (${v.season_name})` : ""}`,
-                      value: v.id,
-                    }))}
-                    onChange={handleVariantChange}
-                    placeholder="Select package option"
-                    triggerClassName="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs text-slate-800"
-                    className="w-full"
-                  />
-                </div>
+              </>
               )}
 
+              {step === 3 && (
+              <>
               <div>
                 <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-700">Vehicle Type</label>
                 <CustomSelect
@@ -373,6 +398,33 @@ export default function EnquiryModal({
                     <input id={`enq-${field}`} type="text" inputMode="numeric" pattern="[0-9]*" value={form[field]} onChange={setNumber(field)} className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs outline-none transition focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20" />
                   </div>
                 ))}
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-700" htmlFor="enq-hotel-category">Hotel Category</label>
+                  <CustomSelect
+                    id="enq-hotel-category"
+                    value={form.hotel_category}
+                    options={HOTEL_CATEGORIES}
+                    onChange={(value) => setForm((f) => ({ ...f, hotel_category: value }))}
+                    placeholder="Select hotel category"
+                    triggerClassName="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs text-slate-800"
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-700" htmlFor="enq-room-type">Room Type</label>
+                  <CustomSelect
+                    id="enq-room-type"
+                    value={form.room_type}
+                    options={ROOM_TYPES}
+                    onChange={(value) => setForm((f) => ({ ...f, room_type: value }))}
+                    placeholder="Select room type"
+                    triggerClassName="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs text-slate-800"
+                    className="w-full"
+                  />
+                </div>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
@@ -434,16 +486,20 @@ export default function EnquiryModal({
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs outline-none transition focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20 resize-none"
                 />
               </div>
+              </>
+              )}
 
               {errorMsg && (
                 <p className="rounded-xl bg-rose-50 p-3 text-xs font-semibold text-rose-600">{errorMsg}</p>
               )}
             </form>
+            </>
           )}
-        </div>
+        </main>
 
         {/* Footer */}
-        <div className="shrink-0 flex items-center justify-end gap-3 border-t border-slate-100 bg-slate-50 px-6 py-3.5">
+        <footer className="sticky bottom-0 z-10 shrink-0 border-t border-slate-200 bg-white/95 px-4 py-3.5 backdrop-blur sm:px-6">
+          <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3">
           {status === "success" ? (
             <button
               type="button"
@@ -454,31 +510,37 @@ export default function EnquiryModal({
             </button>
           ) : (
             <>
-              <button
-                type="button"
-                onClick={onClose}
-                className="btn-ghost text-xs font-semibold"
-              >
+              <button type="button" onClick={onClose} className="btn-ghost text-xs font-semibold">
                 Cancel
               </button>
-              <button
-                type="submit"
-                form="enquiry-form"
-                id="enq-submit-btn"
-                disabled={status === "loading"}
-                className="btn-accent rounded-xl text-xs font-bold px-5 py-2 disabled:opacity-60"
-              >
-                {status === "loading" ? "Sending Enquiry…" : "Submit Enquiry →"}
-              </button>
+              <div className="flex items-center gap-2">
+                {step > 1 && (
+                  <button type="button" onClick={goPrevious} className="btn-outline rounded-xl px-4 py-2 text-xs font-semibold">
+                    Back
+                  </button>
+                )}
+                {step < STEPS.length ? (
+                  <button type="button" onClick={goNext} className="btn-primary rounded-xl px-5 py-2 text-xs font-bold">
+                    Continue
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    form="enquiry-form"
+                    id="enq-submit-btn"
+                    onClick={() => { submitRequested.current = true; }}
+                    disabled={status === "loading"}
+                    className="btn-accent rounded-xl px-5 py-2 text-xs font-bold disabled:opacity-60"
+                  >
+                    {status === "loading" ? "Preparing enquiry…" : "Prepare WhatsApp enquiry"}
+                  </button>
+                )}
+              </div>
             </>
           )}
-        </div>
+          </div>
+        </footer>
       </div>
-
-      <style>{`
-        @keyframes fadeInBg { from { opacity: 0 } to { opacity: 1 } }
-        @keyframes slideUpPanel { from { transform: translateY(40px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
-      `}</style>
     </div>,
     document.body
   );

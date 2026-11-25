@@ -10,6 +10,23 @@ import CONTACTS from "../config/contacts.json";
 
 const VEHICLE_OPTIONS = Object.values(enums.VehicleType);
 const MEAL_OPTIONS = Object.values(enums.MealPlan);
+const HOTEL_CATEGORIES = [
+  { value: "BUDGET", label: "Budget" },
+  { value: "STANDARD", label: "Standard" },
+  { value: "DELUXE", label: "Deluxe" },
+  { value: "LUXURY", label: "Luxury" },
+];
+const ROOM_TYPES = [
+  { value: "SINGLE", label: "Single" },
+  { value: "DOUBLE", label: "Double" },
+  { value: "TWIN", label: "Twin" },
+  { value: "TRIPLE", label: "Triple" },
+  { value: "FAMILY", label: "Family" },
+  { value: "SUITE", label: "Suite" },
+  { value: "DELUXE", label: "Deluxe" },
+  { value: "EXECUTIVE", label: "Executive" },
+  { value: "PRESIDENTIAL", label: "Presidential" },
+];
 const ENQUIRY_TYPE_OPTIONS = Object.values(enums.EnquiryType).filter(
   (type) => type !== "FIXED_TOUR" && type !== "FIXED TOUR"
 );
@@ -36,6 +53,8 @@ const INITIAL = {
   child_count: 0,
   senior_count: 0,
   room_count: 1,
+  hotel_category: "",
+  room_type: "",
   vehicle_count: 0,
   budget_min: 0,
   budget_max: 0,
@@ -318,6 +337,8 @@ export default function CustomTourEnquiryPage() {
         `Duration: ${form.travel_duration_day || 0} days / ${form.travel_duration_night || 0} nights`,
         `Travellers: Adults ${form.adult_count || 0}, Children ${form.child_count || 0}, Seniors ${form.senior_count || 0}`,
         `Rooms: ${form.room_count || 0}`,
+        `Hotel category: ${HOTEL_CATEGORIES.find((option) => option.value === form.hotel_category)?.label || "Not selected"}`,
+        `Room type: ${ROOM_TYPES.find((option) => option.value === form.room_type)?.label || "Not selected"}`,
         `Vehicle type: ${form.vehicle_type || "ANY"}`,
         `Vehicles: ${form.vehicle_count || 0}`,
         `Budget: ${form.budget_min || 0} - ${form.budget_max || 0}`,
@@ -777,6 +798,28 @@ export default function CustomTourEnquiryPage() {
                       <div>
                         <label className={labelClass} htmlFor="custom-page-rooms">Rooms required</label>
                         <input id="custom-page-rooms" type="text" inputMode="numeric" pattern="[0-9]*" value={form.room_count} onChange={setNumber("room_count")} className={inputClass} />
+                      </div>
+                      <div>
+                        <label className={labelClass} htmlFor="custom-page-hotel-category">Hotel category</label>
+                        <CustomSelect
+                          id="custom-page-hotel-category"
+                          value={form.hotel_category}
+                          options={HOTEL_CATEGORIES}
+                          onChange={(value) => setForm((current) => ({ ...current, hotel_category: value }))}
+                          placeholder="Select hotel category"
+                          triggerClassName={selectClass}
+                        />
+                      </div>
+                      <div>
+                        <label className={labelClass} htmlFor="custom-page-room-type">Room type</label>
+                        <CustomSelect
+                          id="custom-page-room-type"
+                          value={form.room_type}
+                          options={ROOM_TYPES}
+                          onChange={(value) => setForm((current) => ({ ...current, room_type: value }))}
+                          placeholder="Select room type"
+                          triggerClassName={selectClass}
+                        />
                       </div>
                       <div>
                         <label className={labelClass} htmlFor="custom-page-meal">Meal plan</label>
