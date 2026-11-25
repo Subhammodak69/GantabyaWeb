@@ -59,6 +59,7 @@ export default function CustomTourEnquiryPage() {
   const [status, setStatus] = useState("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const firstRef = useRef(null);
+  const submitRequested = useRef(false);
   const [packages, setPackages] = useState([]);
   const [packagesLoading, setPackagesLoading] = useState(true);
   const [packagesError, setPackagesError] = useState("");
@@ -291,6 +292,9 @@ export default function CustomTourEnquiryPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (step !== STEPS.length || !submitRequested.current) return;
+    submitRequested.current = false;
+
     if (!form.name.trim() || !form.mobile.trim() || !selectionIsValid) {
       setErrorMsg("Complete your contact details and choose a destination or package before submitting.");
       return;
@@ -849,7 +853,7 @@ export default function CustomTourEnquiryPage() {
                       Continue <ArrowRight size={16} />
                     </button>
                   ) : (
-                    <button type="submit" disabled={status === "loading"} className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60">
+                    <button type="submit" onClick={() => { submitRequested.current = true; }} disabled={status === "loading"} className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-60">
                       {status === "loading" ? "Preparing enquiry…" : <>Prepare WhatsApp enquiry <ArrowRight size={16} /></>}
                     </button>
                   )}
