@@ -26,12 +26,12 @@ function numericDuration(value) {
 }
 
 function variantDuration(variant, field, fallback, suffix) {
-  if (!variant) return numericDuration(fallback) ?? 0;
-  const value = numericDuration(variant[field]);
-  if (value !== null) return value;
-  const duration = typeof variant.duration === "string" ? variant.duration : "";
-  const match = duration.match(new RegExp(`(\\d+)\\s*${suffix}\\b`, "i"));
-  return match ? Number(match[1]) : 0;
+  const value = numericDuration(variant?.[field]);
+  if (value !== null && value > 0) return value;
+  const duration = typeof variant?.duration === "string" ? variant.duration : "";
+  const unit = suffix === "D" ? "(?:days?|d)" : "(?:nights?|n)";
+  const match = duration.match(new RegExp(`(\\d+)\\s*${unit}\\b`, "i"));
+  return match ? Number(match[1]) : numericDuration(fallback) ?? 0;
 }
 
 export default function EnquiryModal({
