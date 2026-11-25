@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTravel } from "../contexts/TravelContext";
-import EnquiryModal from "./EnquiryModal";
 import { addToWishlist, removeFromWishlist } from "../api";
 import { Heart, LoaderCircle, MapPin, Clock, ArrowRight } from "lucide-react";
 
 export default function PackageCard({ pack, index }) {
   const { selectPackage, isMember } = useTravel();
+  const navigate = useNavigate();
   const videoRef = useRef(null);
-  const [enquiryOpen, setEnquiryOpen] = useState(false);
   const [wishlistState, setWishlistState] = useState(pack.is_wishlist ? "added" : "idle");
 
   useEffect(() => {
@@ -137,7 +137,23 @@ export default function PackageCard({ pack, index }) {
                 id={`enquire-btn-${pack.id}`}
                 onClick={(e) => {
                   e.stopPropagation();
-                  setEnquiryOpen(true);
+                  navigate(`/${pack.slug || pack.id}/enquiry`, {
+                    state: {
+                      fixedTourEnquiry: {
+                        packageId: pack.package_id || pack.id,
+                        packageSlug: pack.slug || pack.id,
+                        variantId: pack.default_variant_id || "",
+                        packageTitle: pack.title,
+                        packageDestination: pack.destination || "",
+                        variantName: pack.season_name || "",
+                        variantPrice: pack.starting_price || pack.price || 0,
+                        destinationId: pack.destination_id || "",
+                        durationDays: pack.duration_days || 0,
+                        durationNights: pack.duration_nights || 0,
+                        packageImage: pack.image || pack.cover_image || "",
+                      },
+                    },
+                  });
                 }}
                 className="rounded-lg bg-accent px-3 py-1.5 text-xs font-bold text-white shadow-sm transition hover:bg-accent-600 active:scale-95"
                 aria-label={`Enquire about ${pack.title}`}
@@ -151,22 +167,6 @@ export default function PackageCard({ pack, index }) {
           </div>
         </div>
       </article>
-
-      <EnquiryModal
-        open={enquiryOpen}
-        onClose={() => setEnquiryOpen(false)}
-        packageId={pack.package_id || pack.id}
-        packageSlug={pack.slug || pack.id}
-        variantId={pack.default_variant_id || ""}
-        packageTitle={pack.title}
-        packageDestination={pack.destination || ""}
-        variantName={pack.season_name || ""}
-        variantPrice={pack.starting_price || pack.price || 0}
-        durationDays={pack.duration_days || 0}
-        durationNights={pack.duration_nights || 0}
-        packageImage={pack.image || pack.cover_image || ""}
-        destinationId={pack.destination_id || ""}
-      />
     </>
   );
 }

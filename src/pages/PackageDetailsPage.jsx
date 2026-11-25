@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import PackageGallery from "../components/PackageGallery";
 import Reviews from "../components/Reviews";
-import EnquiryModal from "../components/EnquiryModal";
 import CustomSelect from "../components/CustomSelect";
 import DepartureDateModal from "../components/DepartureDateModal";
 
@@ -22,7 +21,6 @@ export default function PackageDetailsPage() {
   const [selected, setSelected] = useState(0);
   const [variant, setVariant] = useState(null);
   const [showBannerVideo, setShowBannerVideo] = useState(false);
-  const [enquiryOpen, setEnquiryOpen] = useState(false);
   const [reviewForm, setReviewForm] = useState({ rating: 5, review: "" });
   const [editingReview, setEditingReview] = useState(false);
   const [reviewState, setReviewState] = useState({ loading: false, message: "", error: "" });
@@ -53,14 +51,6 @@ export default function PackageDetailsPage() {
       });
     }
   }, [hasLoadedPackage, trackedPackageId, trackedPackageSlug]);
-
-  useEffect(() => {
-    if (enquiryOpen) {
-      trackVisitorEvent("enquiry_form_open", window.location.pathname, {
-        package_id: pack?.id || id,
-      });
-    }
-  }, [enquiryOpen, id, pack?.id]);
 
   useEffect(() => {
     if (pack) {
@@ -227,9 +217,34 @@ export default function PackageDetailsPage() {
     });
   };
 
-  const handleShareEnquiry = () => {
+  const handleShareEnquiry = (dateInfo = selectedDepartureDate) => {
     if (!pack) return;
-    setEnquiryOpen(true);
+    trackVisitorEvent("enquiry_form_open", window.location.pathname, {
+      package_id: pack.id || id,
+    });
+    navigate(`/${pack.slug || id}/enquiry`, {
+      state: {
+        fixedTourEnquiry: {
+          packageId: pack.package_id || pack.id || id,
+          packageSlug: pack.slug || id,
+          variantId: active?.id || "",
+          packageTitle: pack.title,
+          packageDestination: pack.destination || "",
+          variantName: active?.name || active?.season_name || "",
+          variantPrice: active?.starting_price || active?.price || 0,
+          destinationId: pack.destination_id || "",
+          travelDate: dateInfo?.departure_date
+            || dateInfo?.date
+            || active?.dates?.[0]?.departure_date
+            || active?.dates?.[0]?.date
+            || "",
+          departureDates: active?.dates || [],
+          durationDays: active?.duration_days || 0,
+          durationNights: active?.duration_nights || 0,
+          packageImage: active?.cover_image || active?.banner?.image || pack.image || pack.cover_image || pack.banner?.image || "",
+        },
+      },
+    });
   };
   const route = (active.route || pack.route || []).map((place) => place.city || place.place || place).join(" → ");
 
@@ -819,27 +834,8 @@ export default function PackageDetailsPage() {
         tourTitle={pack.title}
         onBookOrEnquire={(dateInfo) => {
           setSelectedDepartureDate(dateInfo);
-          setEnquiryOpen(true);
+          handleShareEnquiry(dateInfo);
         }}
-      />
-
-      {/* Enquiry Modal */}
-      <EnquiryModal
-        open={enquiryOpen}
-        onClose={() => setEnquiryOpen(false)}
-        packageId={pack.package_id || pack.id || id}
-        packageSlug={pack.slug || id}
-        variantId={active?.id || ""}
-        packageTitle={pack.title}
-        packageDestination={pack.destination || ""}
-        variantName={active?.name || active?.season_name || ""}
-        variantPrice={active?.starting_price || active?.price || 0}
-        destinationId={pack.destination_id || ""}
-        travelDate={selectedDepartureDate?.departure_date || selectedDepartureDate?.date || active?.dates?.[0]?.date || ""}
-        durationDays={active?.duration_days || 0}
-        durationNights={active?.duration_nights || 0}
-        packageImage={active?.cover_image || active?.banner?.image || pack?.image || pack?.cover_image || pack?.banner?.image || ""}
-        departureDates={active?.dates || []}
       />
     </div>
   );

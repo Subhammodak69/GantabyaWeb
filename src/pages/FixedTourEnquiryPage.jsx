@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { fetchPackageVariants } from "../api";
 import { useTravel } from "../contexts/TravelContext";
-import CustomSelect from "./CustomSelect";
-import { X } from "lucide-react";
+import CustomSelect from "../components/CustomSelect";
+import Seo from "../components/Seo";
+import { ArrowLeft } from "lucide-react";
 import CONTACTS from "../config/contacts.json";
 
 const WHATSAPP_NUMBER = CONTACTS.whatsapp?.[0]?.number || "919932204885";
@@ -11,6 +12,7 @@ const INITIAL = {
   name: "", mobile: "", email: "", channel: "WEBSITE", variant_id: "", travel_date: "",
   adult_count: 1, child_count: 0, senior_count: 0,
 };
+const EMPTY_DATES = [];
 
 function numericDuration(value) {
   if (typeof value === "number" && Number.isFinite(value)) return value;
@@ -34,23 +36,25 @@ function variantDuration(variant, field, fallback, suffix) {
   return match ? Number(match[1]) : numericDuration(fallback) ?? 0;
 }
 
-export default function EnquiryModal({
-  open,
-  onClose,
-  packageId = "",
-  packageSlug = "",
-  variantId = "",
-  packageTitle = "",
-  packageDestination = "",
-  variantName = "",
-  variantPrice = 0,
-  destinationId = "",
-  travelDate = "",
-  departureDates = [],
-  durationDays = 0,
-  durationNights = 0,
-  packageImage = "",
-}) {
+export default function FixedTourEnquiryPage() {
+  const { id } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const enquiry = location.state?.fixedTourEnquiry;
+  const {
+    packageId = "",
+    packageSlug = id || "",
+    variantId = "",
+    packageTitle = "",
+    packageDestination = "",
+    variantName = "",
+    variantPrice = 0,
+    travelDate = "",
+    departureDates = EMPTY_DATES,
+    durationDays = 0,
+    durationNights = 0,
+    packageImage = "",
+  } = enquiry || {};
   const { user } = useTravel();
   const [form, setForm] = useState(INITIAL);
   const [variants, setVariants] = useState([]);
@@ -65,7 +69,7 @@ export default function EnquiryModal({
   const firstRef = useRef(null);
 
   useEffect(() => {
-    if (!open) return;
+    if (!enquiry) return undefined;
 
     let isMounted = true;
     const lookupKey = packageSlug || packageId;
@@ -99,40 +103,42 @@ export default function EnquiryModal({
     return () => {
       isMounted = false;
     };
-  }, [open, packageSlug, packageId, variantId, packageTitle, departureDates]);
+  }, [enquiry, packageSlug, packageId, variantId, departureDates]);
 
   useEffect(() => {
-    if (open) {
-      setForm({
-        name: user?.name || "",
-        mobile: user?.mobile || user?.phone || "",
-        email: user?.email || "",
-        channel: "WEBSITE",
-        variant_id: variantId || "",
-        travel_date: travelDate || "",
-        adult_count: 1,
-        child_count: 0,
-        senior_count: 0,
-      });
-      setStatus("idle");
-      setErrorMsg("");
-      setWhatsappUrl("");
-      setWhatsappOpened(false);
-      setTimeout(() => firstRef.current?.focus(), 50);
+    setForm({
+      name: user?.name || "",
+      mobile: user?.mobile || user?.phone || "",
+      email: user?.email || "",
+      channel: "WEBSITE",
+      variant_id: variantId || "",
+      travel_date: travelDate || "",
+      adult_count: 1,
+      child_count: 0,
+      senior_count: 0,
+    });
+    setStatus("idle");
+    setErrorMsg("");
+    setWhatsappUrl("");
+    setWhatsappOpened(false);
+    setTimeout(() => firstRef.current?.focus(), 50);
+  }, [user, packageTitle, variantId, travelDate]);
+
+  useEffect(() => {
+    if (!enquiry) {
+      navigate(`/${id}`, { replace: true });
     }
-  }, [open, user, packageTitle, variantId, travelDate]);
+  }, [enquiry, id, navigate]);
 
   useEffect(() => {
-    if (!open) return;
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const handleKey = (e) => { if (e.key === "Escape") onClose(); };
+    const handleKey = (event) => {
+      if (event.key === "Escape") navigate(-1);
+    };
     window.addEventListener("keydown", handleKey);
     return () => {
-      document.body.style.overflow = originalOverflow;
       window.removeEventListener("keydown", handleKey);
     };
-  }, [open, onClose]);
+  }, [navigate]);
 
   const setNumber = (field) => (e) => {
     if (/^\d*$/.test(e.target.value)) {
@@ -189,77 +195,70 @@ export default function EnquiryModal({
     }
   };
 
-  if (!open) return null;
+  if (!enquiry) return null;
 
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[9999] min-h-screen overflow-y-auto bg-slate-50"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="enquiry-modal-title"
-    >
-      <div className="flex min-h-screen w-full flex-col bg-slate-50">
-        {/* Header */}
-        <div className="shrink-0 border-b border-navy-light bg-navy px-4 py-4 text-white sm:px-6">
-          <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-accent-300">Holiday enquiry</p>
-              <h2 id="enquiry-modal-title" className="truncate font-display text-base font-bold text-white sm:text-lg">
-                {packageTitle || "Send Travel Enquiry"}
-              </h2>
-            </div>
-            <button
-              onClick={onClose}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-white/10 text-white transition hover:bg-white/20"
-              aria-label="Close enquiry"
-            >
-              <X size={18} />
-            </button>
+  return (
+    <div className="min-h-screen bg-slate-50 pb-12">
+      <Seo
+        title={`${packageTitle || "Fixed Tour"} Enquiry | Gantabyaa`}
+        description="Send your fixed tour enquiry to the Gantabyaa holiday team."
+        path={`/${id}/enquiry`}
+        robots="noindex,nofollow"
+      />
+      <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-6 sm:px-6 lg:px-8">
+        <header className="mb-8 flex flex-col gap-4 border-b border-slate-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-wider text-primary">Fixed tour enquiry</p>
+            <h1 className="mt-2 font-display text-3xl font-extrabold tracking-tight text-navy sm:text-4xl">
+              Enquire about your tour
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
+              Confirm your travel details and our holiday team will help with availability and pricing.
+            </p>
           </div>
-        </div>
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="inline-flex items-center gap-2 self-start rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-navy transition hover:bg-slate-100 sm:self-auto"
+          >
+            <ArrowLeft size={16} />
+            Back to tour
+          </button>
+        </header>
 
-        {/* Body */}
-        <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 py-6 sm:px-6 lg:px-8">
-          {status === "success" ? (
-            <div className="flex w-full flex-1 items-center justify-center py-6">
-              <section className="w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg">
-                <div className="bg-gradient-to-br from-emerald-50 via-white to-primary-50 px-6 py-7 text-center sm:px-10">
-                  <span className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-emerald-100 text-3xl font-bold text-emerald-600">✓</span>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-700">Enquiry prepared</p>
-                  <h3 className="mt-2 font-display text-2xl font-bold text-navy">You’re one step away</h3>
-                  <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600">
-                    {whatsappOpened
-                      ? "WhatsApp opened in a new tab. Review your enquiry there and press Send to share it with our holiday team."
-                      : "Your enquiry is ready. Open WhatsApp in a new tab and press Send to share it with our holiday team."}
-                  </p>
-                </div>
-                <div className={`grid gap-4 p-5 sm:p-6 ${packageImage ? "sm:grid-cols-[120px_1fr]" : ""}`}>
-                  {packageImage ? (
-                    <img src={packageImage} alt="" className="h-28 w-full rounded-xl object-cover sm:h-28 sm:w-[120px]" />
-                  ) : null}
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-primary">Selected fixed tour</p>
-                    <h4 className="mt-1 font-display text-base font-bold text-navy">{packageTitle || "Tour package"}</h4>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {[packageDestination, selectedVariant?.name || selectedVariant?.season_name || variantName]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </p>
-                    <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                      <span className="rounded-lg bg-slate-100 px-2.5 py-1.5 font-semibold text-slate-700">
-                        Departure: {form.travel_date || "Not selected"}
-                      </span>
-                      <span className="rounded-lg bg-slate-100 px-2.5 py-1.5 font-semibold text-slate-700">
-                        {travelDurationDay} days · {travelDurationNight} nights
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </section>
+        {status === "success" ? (
+          <section className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center py-8 text-center" role="status">
+            <span className="mb-5 grid h-16 w-16 place-items-center rounded-full bg-green-100 text-3xl text-success">✓</span>
+            <h2 className="font-display text-2xl font-bold text-navy">Enquiry ready in WhatsApp</h2>
+            <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-600">
+              {whatsappOpened
+                ? "WhatsApp opened in a new tab. Review your enquiry and press Send to share it with our holiday team."
+                : "Your enquiry is prepared. Open WhatsApp and press Send to share it with our holiday team."}
+            </p>
+            <section className="mt-7 w-full overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-sm sm:flex">
+              {packageImage ? <img src={packageImage} alt={packageTitle || "Selected tour"} className="h-40 w-full object-cover sm:h-auto sm:w-48" /> : null}
+              <div className="min-w-0 flex-1 p-4 sm:p-5">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-primary">Selected fixed tour</p>
+                <h3 className="mt-1 font-display text-base font-bold text-navy">{packageTitle || "Tour package"}</h3>
+                <p className="mt-1 text-xs text-slate-500">
+                  {[packageDestination, selectedVariant?.name || selectedVariant?.season_name || variantName].filter(Boolean).join(" · ")}
+                </p>
+                <p className="mt-3 text-xs font-semibold text-slate-600">
+                  Departure: {form.travel_date || "Not selected"} · {travelDurationDay} days / {travelDurationNight} nights
+                </p>
+              </div>
+            </section>
+            <div className="mt-7 flex flex-wrap justify-center gap-3">
+              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="btn-whatsapp rounded-xl text-sm font-bold">
+                {whatsappOpened ? "Open WhatsApp again" : "Open WhatsApp"}
+              </a>
+              <button type="button" onClick={() => navigate(-1)} className="btn-primary rounded-xl text-sm font-bold">
+                Back to tour
+              </button>
             </div>
-          ) : (
-            <>
-            <form id="enquiry-form" onSubmit={handleSubmit} noValidate className="mx-auto grid w-full max-w-4xl gap-5">
+          </section>
+        ) : (
+          <form id="enquiry-form" onSubmit={handleSubmit} noValidate className="mx-auto w-full max-w-4xl space-y-7">
               <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm sm:flex">
                 {packageImage ? (
                   <img src={packageImage} alt={packageTitle || "Selected tour"} className="h-44 w-full object-cover sm:h-auto sm:w-56" />
@@ -371,52 +370,22 @@ export default function EnquiryModal({
               {errorMsg && (
                 <p className="rounded-xl bg-rose-50 p-3 text-xs font-semibold text-rose-600">{errorMsg}</p>
               )}
-            </form>
-            </>
-          )}
-        </main>
-
-        {/* Footer */}
-        <footer className="sticky bottom-0 z-10 shrink-0 border-t border-slate-200 bg-white/95 px-4 py-3.5 backdrop-blur sm:px-6">
-          <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3">
-          {status === "success" ? (
-            <div className="flex w-full items-center justify-end gap-3">
-              <a
-                href={whatsappUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-whatsapp rounded-xl px-5 py-2 text-xs font-bold"
-              >
-                {whatsappOpened ? "Open WhatsApp again" : "Open WhatsApp"}
-              </a>
-              <button
-                type="button"
-                onClick={onClose}
-                className="btn-primary rounded-xl px-5 py-2 text-xs font-bold"
-              >
-                Done
-              </button>
-            </div>
-          ) : (
-            <>
-              <button type="button" onClick={onClose} className="btn-ghost text-xs font-semibold">
-                Cancel
-              </button>
-              <button
-                type="submit"
-                form="enquiry-form"
-                id="enq-submit-btn"
-                disabled={status === "loading"}
-                className="btn-accent rounded-xl px-5 py-2 text-xs font-bold disabled:opacity-60"
-              >
-                {status === "loading" ? "Preparing enquiry…" : "Enquire on WhatsApp"}
-              </button>
-            </>
-          )}
-          </div>
-        </footer>
+              <div className="flex justify-end gap-3 border-t border-slate-200 pt-4">
+                <button type="button" onClick={() => navigate(-1)} className="btn-ghost text-xs font-semibold">
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  id="enq-submit-btn"
+                  disabled={status === "loading"}
+                  className="btn-accent rounded-xl px-5 py-2 text-xs font-bold disabled:opacity-60"
+                >
+                  {status === "loading" ? "Preparing enquiry…" : "Enquire on WhatsApp"}
+                </button>
+              </div>
+          </form>
+        )}
       </div>
-    </div>,
-    document.body
+      </div>
   );
 }

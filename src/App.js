@@ -6,6 +6,7 @@ import Header from "./components/layout/Header";
 import Footer from "./components/layout/Footer";
 import HomePage from "./pages/HomePage";
 import PackageDetailsPage from "./pages/PackageDetailsPage";
+import FixedTourEnquiryPage from "./pages/FixedTourEnquiryPage";
 import ProfilePage from "./pages/ProfilePage";
 import AuthPage from "./pages/AuthPage";
 import CustomTourEnquiryPage from "./pages/CustomTourEnquiryPage";
@@ -166,6 +167,7 @@ function AppRoutes() {
         <Route path="/tours" element={<Layout><ToursExplorePage /></Layout>} />
         <Route path="/destinations" element={<Layout><DestinationsPage /></Layout>} />
         <Route path="/destinations/:slug" element={<Layout><DestinationDetailsPage /></Layout>} />
+        <Route path="/:id/enquiry" element={<Layout><FixedTourEnquiryPage /></Layout>} />
         <Route path="/:id" element={<Layout><PackageDetailsPage /></Layout>} />
         <Route path="/custom-tour-enquiry" element={<Layout><CustomTourEnquiryPage /></Layout>} />
         <Route path="/contact" element={<Layout><ContactUsPage /></Layout>} />
