@@ -49,7 +49,9 @@ function displayValue(value) {
 
 function lookupLabel(items, id) {
   if (!id) return undefined;
-  const match = items.find((item) => String(item.id || item.package_id) === String(id));
+  const match = items.find((item) =>
+    String(item.id) === String(id) || String(item.package_id) === String(id)
+  );
   return match && firstValue(match.title, match.name, match.destination_name, match.destination);
 }
 
@@ -152,7 +154,8 @@ export default function EnquiryDetailsPage() {
   useEffect(() => {
     if (!enquiry?.package_id || lookupOptions.packages.length === 0) return undefined;
     const selectedPackage = lookupOptions.packages.find((item) =>
-      String(item.id || item.package_id) === String(enquiry.package_id)
+      String(item.id) === String(enquiry.package_id) ||
+      String(item.package_id) === String(enquiry.package_id)
     );
     const packageRef = selectedPackage?.slug || selectedPackage?.id || enquiry.package_id;
     let active = true;
