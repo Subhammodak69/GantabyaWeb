@@ -1,17 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  deleteEnquiry,
-  fetchDestinations,
-  fetchEnquiries,
-  fetchPackages,
-  fetchPackageVariants,
-  fetchVehicles,
-  updateEnquiry,
-} from "../api";
-import CustomSelect from "../components/CustomSelect";
-import CustomDatePicker from "../components/CustomDatePicker";
-import { LoaderCircle, MessageSquareText, X } from "lucide-react";
+import { fetchEnquiries } from "../api";
+import { MessageSquareText } from "lucide-react";
 
 function formatDate(value) {
   if (!value) return "Date not set";
@@ -23,14 +13,6 @@ function formatDate(value) {
         month: "short",
         year: "numeric",
       });
-}
-
-function getLookupItems(response) {
-  const data = response?.data;
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.items)) return data.items;
-  if (Array.isArray(data?.results)) return data.results;
-  return [];
 }
 
 const STATUS_THEMES = {
@@ -47,17 +29,6 @@ export default function EnquiriesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeFilter, setActiveFilter] = useState("ALL");
-  const [editing, setEditing] = useState(null);
-  const [editForm, setEditForm] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [lookupOptions, setLookupOptions] = useState({
-    packages: [],
-    variants: [],
-    destinations: [],
-    vehicles: [],
-  });
-  const [lookupsLoading, setLookupsLoading] = useState(false);
-  const [lookupError, setLookupError] = useState("");
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -69,155 +40,6 @@ export default function EnquiriesPage() {
       .catch((err) => setError(err.message || "Could not load your enquiries."))
       .finally(() => setLoading(false));
   }, []);
-
-  const startEdit = (item) => {
-    setEditing(item);
-    setLookupError("");
-    setLookupOptions((current) => ({ ...current, variants: [] }));
-    setEditForm({
-      name: item.enquirer_name || "", phone: item.enquirer_phone || "", email: item.enquirer_email || "", travel_date: item.travel_date || "",
-      package_id: item.package_id || "", variant_id: item.variant_id || "", destination_id: item.destination_id || "",
-      travel_duration_day: item.travel_duration_day ?? 0, travel_duration_night: item.travel_duration_night ?? 0,
-      adult_count: item.adult_count ?? item.pax_no ?? 1, child_count: item.child_count ?? 0, senior_count: item.senior_count ?? 0,
-      vehicle_id: item.vehicle_id || "",
-      room_count: item.room_count ?? item.no_room ?? 0, vehicle_count: item.vehicle_count ?? 0,
-      budget_min: item.budget_min ?? 0, budget_max: item.budget_max ?? 0,
-      message: item.message || "", special_requirements: item.special_requirements || "", meal_plan: item.meal_plan || "ANY",
-    });
-  };
-
-  useEffect(() => {
-    if (!editing) return undefined;
-    let active = true;
-    setLookupsLoading(true);
-
-    Promise.allSettled([
-      fetchPackages({ page: 1, page_size: 100 }),
-      fetchDestinations(1, 100),
-      fetchVehicles(1, 100),
-    ]).then(([packagesResult, destinationsResult, vehiclesResult]) => {
-      if (!active) return;
-      const failedLookups = [
-        packagesResult,
-        destinationsResult,
-        vehiclesResult,
-      ].filter((result) => result.status === "rejected");
-      if (failedLookups.length) {
-        setLookupError("Some related options could not be loaded. Close and reopen the form to retry.");
-      }
-      setLookupOptions((current) => ({
-        ...current,
-        packages: packagesResult.status === "fulfilled" ? packagesResult.value.items : [],
-        destinations: destinationsResult.status === "fulfilled" ? destinationsResult.value.items : [],
-        vehicles: vehiclesResult.status === "fulfilled" ? getLookupItems(vehiclesResult.value) : [],
-      }));
-      setLookupsLoading(false);
-    });
-
-    return () => {
-      active = false;
-    };
-  }, [editing]);
-
-  useEffect(() => {
-    if (!editing || !editForm?.package_id) {
-      setLookupOptions((current) => ({ ...current, variants: [] }));
-      return undefined;
-    }
-    if (lookupsLoading) return undefined;
-
-    const selectedPackage = lookupOptions.packages.find((item) =>
-      String(item.id) === String(editForm.package_id) ||
-      String(item.package_id) === String(editForm.package_id)
-    );
-    const packageRef = selectedPackage?.slug || selectedPackage?.id || editForm.package_id;
-    let active = true;
-
-    fetchPackageVariants(packageRef)
-      .then((result) => {
-        if (active) {
-          setLookupOptions((current) => ({ ...current, variants: result.items || [] }));
-        }
-      })
-      .catch((error) => {
-        if (active) {
-          setLookupOptions((current) => ({ ...current, variants: [] }));
-          setLookupError(error.message || "Package variants could not be loaded.");
-        }
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [editing, editForm?.package_id, lookupsLoading, lookupOptions.packages]);
-
-  const optionsWithCurrent = (records, id, getLabel, fallback) => {
-    const options = records
-      .filter((record) => record?.id || record?.package_id)
-      .map((record) => ({
-        label: getLabel(record) || "Unnamed item",
-        value: record.package_id || record.id,
-      }));
-    if (id && !options.some((option) => String(option.value) === String(id))) {
-      options.unshift({ label: fallback || "Previously selected item", value: id });
-    }
-    return options;
-  };
-
-  const selectEditField = (key, label, options, placeholder) => (
-    <label key={key} className="text-xs font-bold text-slate-600">
-      {label}
-      <CustomSelect
-        value={editForm[key]}
-        options={options}
-        onChange={(value) => {
-          setEditForm((current) => ({
-            ...current,
-            [key]: value,
-            ...(key === "package_id" ? { variant_id: "" } : {}),
-          }));
-        }}
-        triggerClassName="mt-1 h-10"
-        placeholder={placeholder}
-        disabled={lookupsLoading || (key === "variant_id" && !editForm.package_id)}
-      />
-    </label>
-  );
-
-  const saveEdit = async (event) => {
-    event.preventDefault();
-    if (!editing?.id || !editForm.name.trim() || !editForm.phone.trim()) return;
-    setSaving(true);
-    try {
-      await updateEnquiry(editing.id, {
-        ...editForm,
-        name: editForm.name.trim(),
-        phone: editForm.phone.trim(),
-        email: editForm.email.trim(),
-        travel_duration_day: Number(editForm.travel_duration_day) || 0,
-        travel_duration_night: Number(editForm.travel_duration_night) || 0,
-        adult_count: Number(editForm.adult_count) || 0,
-        child_count: Number(editForm.child_count) || 0,
-        senior_count: Number(editForm.senior_count) || 0,
-        room_count: Number(editForm.room_count) || 0,
-        vehicle_count: Number(editForm.vehicle_count) || 0,
-        budget_min: Number(editForm.budget_min) || 0,
-        budget_max: Number(editForm.budget_max) || 0,
-      });
-      const response = await fetchEnquiries();
-      setItems(Array.isArray(response?.data) ? response.data : []);
-      setEditing(null);
-    } catch (err) { setError(err.message || "Could not update your enquiry."); }
-    finally { setSaving(false); }
-  };
-
-  const removeItem = async (item) => {
-    if (!item.id || !window.confirm("Delete this enquiry permanently?")) return;
-    try {
-      await deleteEnquiry(item.id);
-      setItems((current) => current.filter((entry) => entry.id !== item.id));
-    } catch (err) { setError(err.message || "Could not delete your enquiry."); }
-  };
 
   const filteredItems = activeFilter === "ALL"
     ? items
@@ -365,8 +187,6 @@ export default function EnquiriesPage() {
                     <span>Submitted {formatDate(item.created_at)}</span>
                     <div className="flex items-center gap-3">
                       <Link to={`/my-enquiries/${encodeURIComponent(item.id)}`} className="font-bold text-primary hover:underline">View details</Link>
-                      <button type="button" onClick={() => startEdit(item)} className="font-bold text-slate-600 hover:underline">Edit</button>
-                      <button type="button" onClick={() => removeItem(item)} className="font-bold text-rose-600 hover:underline">Delete</button>
                     </div>
                   </div>
                 </article>
@@ -375,146 +195,6 @@ export default function EnquiriesPage() {
           </div>
         )}
       </main>
-      {editing && editForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy-dark/70 p-4">
-          <form onSubmit={saveEdit} className="flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-            <div className="flex shrink-0 items-center justify-between border-b border-slate-100 px-6 py-4">
-              <h2 className="font-display text-xl font-bold text-navy">Edit enquiry</h2>
-              <button type="button" onClick={() => setEditing(null)} className="rounded-lg bg-slate-100 p-2 text-slate-600" aria-label="Close edit form">
-                <X size={18} />
-              </button>
-            </div>
-            <div className="min-h-0 flex-1 overflow-y-auto p-6">
-            {lookupError && (
-              <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-medium text-amber-800" role="status">
-                {lookupError}
-              </p>
-            )}
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              {[
-                ["name", "Full name", "text"],
-                ["phone", "Phone", "tel"],
-                ["email", "Email", "email"],
-                ["travel_duration_day", "Duration (days)", "number"],
-                ["travel_duration_night", "Duration (nights)", "number"],
-                ["adult_count", "Adults", "number"],
-                ["child_count", "Children", "number"],
-                ["senior_count", "Seniors", "number"],
-                ["room_count", "Rooms", "number"],
-                ["vehicle_count", "Vehicles", "number"],
-                ["budget_min", "Minimum budget", "number"],
-                ["budget_max", "Maximum budget", "number"],
-              ].map(([key, label, type]) => (
-                <label key={key} className="text-xs font-bold text-slate-600">
-                  {label}
-                  <input
-                    type="text"
-                    inputMode={type === "number" ? "numeric" : undefined}
-                    pattern={type === "number" ? "[0-9]*" : undefined}
-                    required={key === "name" || key === "phone"}
-                    value={editForm[key]}
-                    onChange={(event) => {
-                      const nextValue = event.target.value;
-                      if (type !== "number" || /^\d*$/.test(nextValue)) {
-                        setEditForm((current) => ({ ...current, [key]: nextValue }));
-                      }
-                    }}
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-normal text-slate-800 outline-none focus:border-primary"
-                  />
-                </label>
-              ))}
-              {selectEditField(
-                "package_id",
-                "Package",
-                optionsWithCurrent(
-                  lookupOptions.packages,
-                  editForm.package_id,
-                  (item) => item.title || item.destination,
-                  editing.tourTitle || editing.package_name || editing.package?.title || editing.package?.name,
-                ),
-                lookupsLoading ? "Loading packages..." : "Select package",
-              )}
-              {selectEditField(
-                "variant_id",
-                "Variant",
-                optionsWithCurrent(
-                  lookupOptions.variants,
-                  editForm.variant_id,
-                  (item) => item.name || item.season_name,
-                  editing.variantName || editing.variant_name || editing.variant?.name,
-                ),
-                !editForm.package_id ? "Select a package first" : "Select variant",
-              )}
-              {selectEditField(
-                "destination_id",
-                "Destination",
-                optionsWithCurrent(
-                  lookupOptions.destinations,
-                  editForm.destination_id,
-                  (item) => item.name || item.destination_name,
-                  editing.destination_name || editing.destination,
-                ),
-                lookupsLoading ? "Loading destinations..." : "Select destination",
-              )}
-              {selectEditField(
-                "vehicle_id",
-                "Vehicle",
-                optionsWithCurrent(
-                  lookupOptions.vehicles,
-                  editForm.vehicle_id,
-                  (item) => item.name || item.vehicle_name || item.title,
-                  editing.vehicle_name || editing.vehicle?.name,
-                ),
-                lookupsLoading ? "Loading vehicles..." : "Select vehicle",
-              )}
-              <label className="text-xs font-bold text-slate-600">
-                Travel date
-                <CustomDatePicker
-                  id="edit-enquiry-travel-date"
-                  value={editForm.travel_date}
-                  onChange={(value) => setEditForm((current) => ({ ...current, travel_date: value }))}
-                  placeholder="Choose travel date"
-                  triggerClassName="mt-1 h-10"
-                />
-              </label>
-              <label className="text-xs font-bold text-slate-600">
-                Meal plan
-                <CustomSelect
-                  id="edit-enquiry-meal-plan"
-                  value={editForm.meal_plan}
-                  options={["ANY", "NONE", "CP", "MAP", "AP"].map((meal) => ({ label: meal, value: meal }))}
-                  onChange={(value) => setEditForm((current) => ({ ...current, meal_plan: value }))}
-                  triggerClassName="mt-1 h-10"
-                  placeholder="Select meal plan"
-                />
-              </label>
-            </div>
-            <label className="mt-3 block text-xs font-bold text-slate-600">
-              Message
-              <textarea
-                value={editForm.message}
-                onChange={(event) => setEditForm((current) => ({ ...current, message: event.target.value }))}
-                className="mt-1 min-h-24 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-normal text-slate-800 outline-none focus:border-primary"
-              />
-            </label>
-            <label className="mt-3 block text-xs font-bold text-slate-600">
-              Special requirements
-              <textarea
-                value={editForm.special_requirements}
-                onChange={(event) => setEditForm((current) => ({ ...current, special_requirements: event.target.value }))}
-                className="mt-1 min-h-24 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-normal text-slate-800 outline-none focus:border-primary"
-              />
-            </label>
-            </div>
-            <div className="shrink-0 border-t border-slate-100 bg-slate-50 px-6 py-4">
-            <button disabled={saving} className="btn-primary flex w-full items-center justify-center gap-2">
-              {saving && <LoaderCircle size={16} className="animate-spin" />}
-              Save changes
-            </button>
-            </div>
-          </form>
-        </div>
-      )}
     </div>
   );
 }

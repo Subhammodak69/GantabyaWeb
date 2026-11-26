@@ -939,19 +939,6 @@ export async function fetchEnquiries(skip = 0, limit = 50) {
   return request(`/api/v1/enquiries?skip=${skip}&limit=${limit}`, {}, true);
 }
 
-export async function updateEnquiry(id, payload) {
-  return request(`/api/v1/enquiries/${encodeURIComponent(id)}`, {
-    method: "PATCH",
-    body: JSON.stringify(payload),
-  }, true);
-}
-
-export async function deleteEnquiry(id) {
-  return request(`/api/v1/enquiries/${encodeURIComponent(id)}`, {
-    method: "DELETE",
-  }, true);
-}
-
 export async function fetchCustomerTours(page = 1, pageSize = 20, filters = {}) {
   const query = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
   Object.entries(filters).forEach(([key, value]) => {
