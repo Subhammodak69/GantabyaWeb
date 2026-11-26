@@ -180,10 +180,15 @@ export default function EnquiryQuotationsPage() {
         ) : quotations.map((quotation) => (
           <article key={quotation.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card sm:p-7">
             <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-4">
-              <div>
+              <Link
+                to={`/my-enquiries/${encodeURIComponent(enquiryId)}/quotations/${encodeURIComponent(quotation.id)}`}
+                state={{ quotation }}
+                className="group min-w-0"
+              >
                 <p className="text-[10px] font-black uppercase tracking-wider text-primary">{quotation.quotation_code || "Quotation"}</p>
-                <h2 className="mt-1 font-display text-lg font-bold text-navy">{quotation.tour_name || "Travel quotation"}</h2>
-              </div>
+                <h2 className="mt-1 font-display text-lg font-bold text-navy group-hover:text-primary">{quotation.tour_name || "Travel quotation"}</h2>
+                <span className="mt-1 inline-block text-xs font-bold text-primary">View details</span>
+              </Link>
               <span className="rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-primary">
                 {String(quotation.status || "PENDING").replace(/_/g, " ")}
               </span>
