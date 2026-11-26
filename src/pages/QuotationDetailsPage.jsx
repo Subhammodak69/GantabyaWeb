@@ -97,13 +97,13 @@ export default function QuotationDetailsPage() {
         ? "bg-amber-300/20 text-amber-100"
         : "bg-cyan-300/20 text-cyan-100";
   const tabs = [
-    { id: "overview", label: "Overview", count: null, color: "bg-indigo-600" },
-    { id: "pricing", label: "Pricing", count: null, color: "bg-emerald-600" },
-    { id: "items", label: "Items", count: quotation?.items?.length || 0, color: "bg-cyan-600" },
-    { id: "hotels", label: "Hotels", count: quotation?.hotels?.length || 0, color: "bg-amber-500" },
-    { id: "transport", label: "Transport", count: quotation?.vehicles?.length || 0, color: "bg-violet-600" },
-    { id: "itinerary", label: "Itinerary", count: quotation?.itinerary?.length || 0, color: "bg-rose-600" },
-    { id: "notes", label: "Notes", count: null, color: "bg-sky-600" },
+    { id: "overview", label: "Overview", count: null },
+    { id: "items", label: "Items", count: quotation?.items?.length || 0 },
+    { id: "hotels", label: "Hotels", count: quotation?.hotels?.length || 0 },
+    { id: "transport", label: "Vehicles", count: quotation?.vehicles?.length || 0 },
+    { id: "itinerary", label: "Itinerary", count: quotation?.itinerary?.length || 0 },
+    { id: "pricing", label: "Pricing", count: null },
+    { id: "notes", label: "Notes", count: null },
   ];
 
   return (
@@ -148,25 +148,23 @@ export default function QuotationDetailsPage() {
           </div>
         ) : quotation ? (
           <>
-            <div className="rounded-2xl border border-slate-200 bg-white p-2 shadow-card">
-              <div className="flex gap-2 overflow-x-auto p-1" role="tablist" aria-label="Quotation detail sections">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    role="tab"
-                    id={`quotation-tab-${tab.id}`}
-                    aria-selected={activeTab === tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`inline-flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition ${
-                      activeTab === tab.id ? `${tab.color} text-white shadow-md` : "bg-slate-50 text-slate-600 hover:bg-slate-100"
-                    }`}
-                  >
-                    {tab.label}
-                    {tab.count !== null && <span className={`rounded-full px-2 py-0.5 text-[10px] ${activeTab === tab.id ? "bg-white/20" : "bg-white text-slate-500"}`}>{tab.count}</span>}
-                  </button>
-                ))}
-              </div>
+            <div className="flex gap-5 overflow-x-auto border-b border-slate-200" role="tablist" aria-label="Quotation detail sections">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  id={`quotation-tab-${tab.id}`}
+                  aria-selected={activeTab === tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`inline-flex shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-1 py-3 text-xs font-bold transition ${
+                    activeTab === tab.id ? "border-primary text-primary" : "border-transparent text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  {tab.label}
+                  {tab.count !== null && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500">{tab.count}</span>}
+                </button>
+              ))}
             </div>
 
             {activeTab === "overview" && (

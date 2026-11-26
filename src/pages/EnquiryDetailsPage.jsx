@@ -187,11 +187,11 @@ export default function EnquiryDetailsPage() {
     ? `${formatBudget(enquiry.budget_min)} – ${formatBudget(enquiry.budget_max)}`
     : "Not provided";
   const tabs = [
-    { id: "contact", label: "Contact", color: "bg-indigo-600" },
-    { id: "travel", label: "Travel", color: "bg-cyan-600" },
-    { id: "travelers", label: "Travelers", color: "bg-emerald-600" },
-    { id: "message", label: "Message", color: "bg-rose-600" },
-    { id: "activity", label: "Activity", color: "bg-amber-500" },
+    { id: "contact", label: "Contact" },
+    { id: "travel", label: "Travel" },
+    { id: "travelers", label: "Travelers" },
+    { id: "message", label: "Message" },
+    { id: "activity", label: "Activity" },
   ];
 
   return (
@@ -243,24 +243,22 @@ export default function EnquiryDetailsPage() {
         ) : enquiry ? (
           <article className="-mt-4 space-y-5">
             {lookupError && <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-medium text-amber-800">{lookupError}</p>}
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-2">
-              <div className="flex gap-2 overflow-x-auto p-1" role="tablist" aria-label="Enquiry detail sections">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    role="tab"
-                    id={`enquiry-tab-${tab.id}`}
-                    aria-selected={activeTab === tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`shrink-0 rounded-xl px-4 py-2.5 text-xs font-bold transition ${
-                      activeTab === tab.id ? `${tab.color} text-white shadow-md` : "bg-white text-slate-600 hover:bg-slate-100"
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
+            <div className="flex gap-5 overflow-x-auto border-b border-slate-200" role="tablist" aria-label="Enquiry detail sections">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  role="tab"
+                  id={`enquiry-tab-${tab.id}`}
+                  aria-selected={activeTab === tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`shrink-0 whitespace-nowrap border-b-2 px-1 py-3 text-xs font-bold transition ${
+                    activeTab === tab.id ? "border-primary text-primary" : "border-transparent text-slate-600 hover:text-slate-900"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
             {activeTab === "contact" && (
               <div id="enquiry-panel-contact" role="tabpanel" aria-labelledby="enquiry-tab-contact" className="space-y-4">

@@ -41,6 +41,15 @@
     height: 6px;
   }
 
+  ::-webkit-scrollbar:horizontal {
+    height: 0;
+  }
+
+  .overflow-x-auto,
+  .overflow-x-scroll {
+    scrollbar-width: none;
+  }
+
   ::-webkit-scrollbar-track {
     background: transparent;
   }
