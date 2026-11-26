@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { fetchEnquiries } from "../api";
 import { MessageSquareText } from "lucide-react";
 
@@ -25,6 +25,7 @@ const STATUS_THEMES = {
 };
 
 export default function EnquiriesPage() {
+  const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -128,7 +129,14 @@ export default function EnquiriesPage() {
             )}
           </div>
         ) : (
-          <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-6 space-y-2.5">
+            <div className="hidden grid-cols-[minmax(0,2fr)_minmax(125px,1fr)_minmax(145px,1.1fr)_minmax(110px,auto)_minmax(100px,auto)] gap-4 rounded-xl border border-slate-200 bg-slate-50 px-5 py-3 text-[10px] font-black uppercase tracking-wider text-slate-500 md:grid">
+              <span>Enquiry</span>
+              <span>Travel</span>
+              <span>Travelers</span>
+              <span>Status</span>
+              <span>Submitted</span>
+            </div>
             {filteredItems.map((item) => {
               const status = item.status || "NEW";
               const themeCls = STATUS_THEMES[status] || "bg-slate-100 text-slate-700 border-slate-200";
@@ -136,58 +144,46 @@ export default function EnquiriesPage() {
               return (
                 <article
                   key={item.id || item.enquiry_code}
-                  className="card p-5 flex flex-col justify-between"
+                  role="link"
+                  tabIndex={0}
+                  aria-label={`View details for enquiry ${item.enquiry_code || ""}`}
+                  onClick={(event) => {
+                    if (event.target instanceof Element && event.target.closest("a, button")) return;
+                    navigate(`/my-enquiries/${encodeURIComponent(item.id)}`);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.target !== event.currentTarget) return;
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      navigate(`/my-enquiries/${encodeURIComponent(item.id)}`);
+                    }
+                  }}
+                  className="grid cursor-pointer gap-4 rounded-xl border border-slate-200 bg-white px-4 py-3.5 shadow-sm transition hover:border-primary/40 hover:bg-slate-50/70 focus:outline-none focus:ring-2 focus:ring-primary/40 sm:px-5 md:grid-cols-[minmax(0,2fr)_minmax(125px,1fr)_minmax(145px,1.1fr)_minmax(110px,auto)_minmax(100px,auto)] md:items-center md:gap-5"
                 >
-                  <div>
-                    {/* Header: Code & Status */}
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
-                          {item.enquiry_code || "ENQUIRY"}
-                        </span>
-                        <h2 className="mt-0.5 truncate font-display text-base font-bold leading-tight text-navy">
-                          {item.subject || item.destination_name || item.destination || "Custom Itinerary"}
-                        </h2>
-                      </div>
-                      <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${themeCls}`}>
-                        {status.replace(/_/g, " ")}
-                      </span>
-                    </div>
-
-                    {/* Metadata Grid */}
-                    <div className="mt-3.5 grid grid-cols-2 gap-2 rounded-xl bg-slate-50 p-3 text-xs text-slate-600">
-                      <div>
-                        <span className="block text-[10px] font-medium text-slate-400">Type</span>
-                        <b className="text-navy">{item.enquiry_type?.replace(/_/g, " ") || "TOUR"}</b>
-                      </div>
-                      <div>
-                        <span className="block text-[10px] font-medium text-slate-400">Travel Date</span>
-                        <b className="text-navy">{formatDate(item.travel_date)}</b>
-                      </div>
-                      <div>
-                        <span className="block text-[10px] font-medium text-slate-400">Travellers / Rooms</span>
-                        <b className="text-navy">{item.adult_count ?? item.pax_no ?? 0} Adults · {item.room_count ?? item.no_room ?? 0} Rm</b>
-                      </div>
-                      <div>
-                        <span className="block text-[10px] font-medium text-slate-400">Channel</span>
-                        <b className="text-navy">{item.channel || "WEBSITE"}</b>
-                      </div>
-                    </div>
-
-                    {/* Message / Special Request */}
-                    {item.message && (
-                      <p className="mt-3 rounded-lg border border-slate-100 bg-white p-2.5 text-xs italic leading-relaxed text-slate-600">
-                        "{item.message}"
-                      </p>
-                    )}
+                  <div className="min-w-0">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary">{item.enquiry_code || "ENQUIRY"}</span>
+                    <h2 className="truncate font-display text-sm font-bold leading-tight text-navy">
+                      {item.subject || item.destination_name || item.destination || "Custom Itinerary"}
+                    </h2>
+                    {item.message && <p className="mt-1 truncate text-[11px] text-slate-500">{item.message}</p>}
                   </div>
-
-                  {/* Footer */}
-                  <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-[11px] text-slate-400">
-                    <span>Submitted {formatDate(item.created_at)}</span>
-                    <div className="flex items-center gap-3">
-                      <Link to={`/my-enquiries/${encodeURIComponent(item.id)}`} className="font-bold text-primary hover:underline">View details</Link>
-                    </div>
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs md:block">
+                    <div><span className="block text-[9px] font-medium uppercase text-slate-400 md:hidden">Type</span><span className="font-semibold text-slate-700">{item.enquiry_type?.replace(/_/g, " ") || "TOUR"}</span></div>
+                    <div><span className="block text-[9px] font-medium uppercase text-slate-400 md:hidden">Travel date</span><span className="font-semibold text-slate-700">{formatDate(item.travel_date)}</span></div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs md:block">
+                    <div><span className="block text-[9px] font-medium uppercase text-slate-400 md:hidden">Travelers / rooms</span><span className="font-semibold text-slate-700">{item.adult_count ?? item.pax_no ?? 0} Adults · {item.room_count ?? item.no_room ?? 0} Rm</span></div>
+                    <div><span className="block text-[9px] font-medium uppercase text-slate-400 md:hidden">Channel</span><span className="font-semibold text-slate-500">{item.channel || "WEBSITE"}</span></div>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 md:flex-col md:items-start md:justify-center">
+                    <span className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${themeCls}`}>
+                      {status.replace(/_/g, " ")}
+                    </span>
+                    <span className="text-[10px] text-slate-400 md:hidden">Submitted {formatDate(item.created_at)}</span>
+                  </div>
+                  <div className="flex items-center justify-between border-t border-slate-100 pt-2 text-[10px] text-slate-400 md:border-0 md:pt-0">
+                    <span className="hidden md:inline">{formatDate(item.created_at)}</span>
+                    <Link to={`/my-enquiries/${encodeURIComponent(item.id)}`} className="font-bold text-primary hover:underline">View details</Link>
                   </div>
                 </article>
               );

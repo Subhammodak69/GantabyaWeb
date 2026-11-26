@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, CalendarDays, CheckCircle2, FileText, LoaderCircle, Plus, Trash2, X, XCircle } from "lucide-react";
 import { acceptQuotation, fetchEnquiryQuotations, rejectQuotation } from "../api";
 import CustomDatePicker from "../components/CustomDatePicker";
@@ -36,6 +36,7 @@ function formatAmount(value) {
 
 export default function EnquiryQuotationsPage() {
   const { enquiryId } = useParams();
+  const navigate = useNavigate();
   const [quotations, setQuotations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -177,67 +178,83 @@ export default function EnquiryQuotationsPage() {
             <h2 className="mt-4 font-display text-lg font-bold text-navy">No quotations yet</h2>
             <p className="mt-2 text-sm text-slate-500">Quotations shared for this enquiry will appear here.</p>
           </div>
-        ) : quotations.map((quotation) => (
-          <article key={quotation.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-card sm:p-7">
-            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-4">
-              <Link
-                to={`/my-enquiries/${encodeURIComponent(enquiryId)}/quotations/${encodeURIComponent(quotation.id)}`}
-                state={{ quotation }}
-                className="group min-w-0"
-              >
-                <p className="text-[10px] font-black uppercase tracking-wider text-primary">{quotation.quotation_code || "Quotation"}</p>
-                <h2 className="mt-1 font-display text-lg font-bold text-navy group-hover:text-primary">{quotation.tour_name || "Travel quotation"}</h2>
-                <span className="mt-1 inline-block text-xs font-bold text-primary">View details</span>
-              </Link>
-              <span className="rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-primary">
-                {String(quotation.status || "PENDING").replace(/_/g, " ")}
-              </span>
-            </div>
+        ) : (
+          <div className="space-y-2.5">
+            {quotations.map((quotation) => {
+              const status = String(quotation.status || "PENDING").toUpperCase();
+              const statusTheme = status === "ACCEPTED"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : status === "REJECTED"
+                  ? "border-rose-200 bg-rose-50 text-rose-700"
+                  : status === "DRAFT"
+                    ? "border-amber-200 bg-amber-50 text-amber-800"
+                    : "border-primary-200 bg-primary-50 text-primary";
+              const detailsPath = `/my-enquiries/${encodeURIComponent(enquiryId)}/quotations/${encodeURIComponent(quotation.id)}`;
 
-            <div className="flex items-center gap-2 py-4 text-xs text-slate-600">
-              <CalendarDays size={15} className="text-primary" />
-              {formatDate(quotation.travel_date)}
-              {quotation.return_date ? ` – ${formatDate(quotation.return_date)}` : ""}
-            </div>
-
-            {quotation.items?.length > 0 && (
-              <div className="divide-y divide-slate-100">
-                {quotation.items.map((item) => (
-                  <div key={item.id} className="flex items-start justify-between gap-4 py-3">
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold text-navy">{item.name || "Quotation item"}</p>
-                      {item.description && <p className="mt-1 text-xs text-slate-500">{item.description}</p>}
-                      {item.quantity != null && <p className="mt-1 text-[10px] text-slate-400">Qty: {item.quantity}</p>}
+              return (
+                <article
+                  key={quotation.id}
+                  role="link"
+                  tabIndex={0}
+                  aria-label={`View details for ${quotation.tour_name || quotation.quotation_code || "quotation"}`}
+                  onClick={(event) => {
+                    if (event.target instanceof Element && event.target.closest("a, button")) return;
+                    navigate(detailsPath, { state: { quotation } });
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.target !== event.currentTarget) return;
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      navigate(detailsPath, { state: { quotation } });
+                    }
+                  }}
+                  className="flex cursor-pointer flex-col gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3.5 shadow-sm transition hover:border-primary/40 hover:bg-slate-50/70 focus:outline-none focus:ring-2 focus:ring-primary/40 sm:flex-row sm:items-center sm:gap-6 sm:px-5"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-primary">{quotation.quotation_code || "Quotation"}</p>
+                      <span className={`rounded-full border px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wide ${statusTheme}`}>
+                        {status.replace(/_/g, " ")}
+                      </span>
+                      {quotation.version ? <span className="text-[10px] font-medium text-slate-400">Version {quotation.version}</span> : null}
                     </div>
-                    <p className="shrink-0 text-sm font-semibold text-slate-700">{formatAmount(item.total_price ?? item.unit_price)}</p>
+                    <Link to={detailsPath} state={{ quotation }} className="group mt-1 block min-w-0">
+                      <h2 className="truncate font-display text-sm font-bold text-navy group-hover:text-primary">{quotation.tour_name || "Travel quotation"}</h2>
+                    </Link>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-500">
+                      <span className="inline-flex items-center gap-1.5">
+                        <CalendarDays size={13} className="text-primary" />
+                        {formatDate(quotation.travel_date)}
+                        {quotation.return_date ? ` – ${formatDate(quotation.return_date)}` : ""}
+                      </span>
+                      <span>Valid until {formatDate(quotation.valid_until)}</span>
+                    </div>
                   </div>
-                ))}
-              </div>
-            )}
 
-            <div className="mt-3 flex flex-wrap items-end justify-between gap-3 border-t border-slate-100 pt-4">
-              <div className="text-[10px] text-slate-500">
-                <p>Valid until {formatDate(quotation.valid_until)}</p>
-                {quotation.version ? <p className="mt-1">Version {quotation.version}</p> : null}
-              </div>
-              <div className="text-right">
-                <p className="text-[10px] font-bold uppercase tracking-wide text-slate-500">Total</p>
-                <p className="mt-1 text-xl font-extrabold text-primary">{formatAmount(quotation.total_amount)}</p>
-              </div>
-            </div>
-            {["SENT", "VIEWED"].includes(String(quotation.status || "").toUpperCase()) && (
-              <div className="mt-5 flex flex-col gap-2 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
-                <button type="button" onClick={() => openReject(quotation)} className="inline-flex items-center justify-center gap-2 rounded-lg border border-rose-200 px-4 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-50">
-                  <XCircle size={16} /> Decline quotation
-                </button>
-                <button type="button" onClick={() => openAccept(quotation)} className="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-700">
-                  <CheckCircle2 size={16} /> Accept quotation
-                </button>
-              </div>
-            )}
-            {quotation.important_notes && <p className="mt-4 rounded-xl bg-slate-50 p-3 text-xs leading-5 text-slate-600">{quotation.important_notes}</p>}
-          </article>
-        ))}
+                  <div className="flex flex-wrap items-center justify-between gap-4 border-t border-slate-100 pt-3 sm:justify-end sm:gap-5 sm:border-0 sm:pt-0">
+                    <div className="sm:min-w-[105px] sm:text-right">
+                      <p className="text-[9px] font-bold uppercase tracking-wide text-slate-400">Total</p>
+                      <p className="text-base font-extrabold text-primary">{formatAmount(quotation.total_amount)}</p>
+                    </div>
+                    <Link to={detailsPath} state={{ quotation }} className="rounded-lg border border-primary/25 bg-primary-50 px-3 py-2 text-xs font-bold text-primary hover:bg-primary-100">
+                      View details
+                    </Link>
+                    {["SENT", "VIEWED"].includes(status) && (
+                      <div className="flex gap-2">
+                        <button type="button" onClick={() => openReject(quotation)} aria-label="Decline quotation" className="inline-flex items-center justify-center rounded-lg border border-rose-200 px-2.5 py-2 text-rose-700 hover:bg-rose-50 sm:px-3">
+                          <XCircle size={15} /><span className="ml-1.5 text-xs font-bold">Decline</span>
+                        </button>
+                        <button type="button" onClick={() => openAccept(quotation)} aria-label="Accept quotation" className="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-2.5 py-2 text-white hover:bg-emerald-700 sm:px-3">
+                          <CheckCircle2 size={15} /><span className="ml-1.5 text-xs font-bold">Accept</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {action && (
