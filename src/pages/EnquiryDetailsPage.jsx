@@ -6,7 +6,6 @@ import {
   fetchEnquiries,
   fetchPackages,
   fetchPackageVariants,
-  fetchVehicles,
 } from "../api";
 
 const STATUS_THEMES = {
@@ -51,7 +50,7 @@ function displayValue(value) {
 function lookupLabel(items, id) {
   if (!id) return undefined;
   const match = items.find((item) => String(item.id || item.package_id) === String(id));
-  return match && firstValue(match.title, match.name, match.destination_name, match.destination, match.vehicle_name);
+  return match && firstValue(match.title, match.name, match.destination_name, match.destination);
 }
 
 function firstValue(...values) {
@@ -99,7 +98,7 @@ export default function EnquiryDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("contact");
-  const [lookupOptions, setLookupOptions] = useState({ packages: [], variants: [], destinations: [], vehicles: [] });
+  const [lookupOptions, setLookupOptions] = useState({ packages: [], variants: [], destinations: [] });
   const [lookupError, setLookupError] = useState("");
 
   useEffect(() => {
@@ -137,16 +136,14 @@ export default function EnquiryDetailsPage() {
     Promise.allSettled([
       fetchPackages({ page: 1, page_size: 100 }),
       fetchDestinations(1, 100),
-      fetchVehicles(1, 100),
-    ]).then(([packages, destinations, vehicles]) => {
+    ]).then(([packages, destinations]) => {
       if (!active) return;
-      const failed = [packages, destinations, vehicles].some((result) => result.status === "rejected");
+      const failed = [packages, destinations].some((result) => result.status === "rejected");
       setLookupError(failed ? "Some linked names could not be resolved; showing the enquiry data available." : "");
       setLookupOptions((current) => ({
         ...current,
         packages: packages.status === "fulfilled" ? getItems(packages.value) : [],
         destinations: destinations.status === "fulfilled" ? getItems(destinations.value) : [],
-        vehicles: vehicles.status === "fulfilled" ? getItems(vehicles.value) : [],
       }));
     });
     return () => { active = false; };
@@ -292,7 +289,7 @@ export default function EnquiryDetailsPage() {
                   <Detail label="Seniors" value={enquiry.senior_count} />
                   <Detail label="Rooms" value={firstValue(enquiry.room_count, enquiry.no_room)} />
                   <Detail label="Vehicles" value={enquiry.vehicle_count} />
-                  <Detail label="Vehicle" value={firstValue(enquiry.vehicle_name, enquiry.vehicle?.name, lookupLabel(lookupOptions.vehicles, enquiry.vehicle_id))} />
+                  <Detail label="Vehicle" value={firstValue(enquiry.vehicle_name, enquiry.vehicle?.name)} />
                   <Detail label="Vehicle registration" value={enquiry.vehicle_registration_number} />
                   <Detail label="Budget range" value={budget} />
                 </Section>

@@ -698,13 +698,6 @@ export async function fetchHotels(page = 1, pageSize = 20, destinationId = "", c
   return request(`/api/v1/hotels?${query.toString()}`);
 }
 
-export async function fetchVehicles(page = 1, pageSize = 20, vehicleType = "", search = "") {
-  const query = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
-  if (vehicleType) query.set("vehicle_type", vehicleType);
-  if (search) query.set("search", search);
-  return request(`/api/v1/vehicles?${query.toString()}`);
-}
-
 export async function fetchRulesRegulations(type) {
   const tourType = String(type).toUpperCase() === "DOMESTIC" ? "dom" : "int";
   const query = new URLSearchParams({ type: tourType });
