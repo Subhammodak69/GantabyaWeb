@@ -241,7 +241,7 @@ export default function EnquiryDetailsPage() {
             <Link to="/my-enquiries" className="mt-4 inline-flex font-bold underline">Return to enquiries</Link>
           </div>
         ) : enquiry ? (
-          <article className="-mt-4 space-y-5">
+          <article className="mt-4 space-y-5">
             {lookupError && <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-medium text-amber-800">{lookupError}</p>}
             <div className="flex gap-5 overflow-x-auto border-b border-slate-200" role="tablist" aria-label="Enquiry detail sections">
               {tabs.map((tab) => (
