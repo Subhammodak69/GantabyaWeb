@@ -32,16 +32,16 @@ function Detail({ label, value }) {
       ? value ? "Yes" : "No"
       : value;
   return (
-    <div className="min-w-0 py-2">
+    <div className="grid grid-cols-[minmax(100px,0.38fr)_minmax(0,1fr)] items-start gap-4 border-t border-slate-200 py-3 sm:grid-cols-[minmax(160px,0.38fr)_minmax(0,1fr)]">
       <dt className="text-xs font-medium text-slate-500">{label}</dt>
-      <dd className="mt-1 break-words text-sm font-semibold text-slate-800">{displayValue}</dd>
+      <dd className="break-words text-right text-sm font-semibold text-slate-800">{displayValue}</dd>
     </div>
   );
 }
 
 function Section({ title, children }) {
   return (
-    <section className="rounded-2xl border border-slate-200 border-l-4 border-l-indigo-400 bg-white p-5 shadow-card sm:p-6">
+    <section className="border-b border-slate-200 pb-4 last:border-b-0">
       <h2 className="font-display text-lg font-bold text-navy">{title}</h2>
       {children}
     </section>
@@ -173,7 +173,7 @@ export default function QuotationDetailsPage() {
             {activeTab === "overview" && (
               <div id="quotation-panel-overview" role="tabpanel" aria-labelledby="quotation-tab-overview" className="space-y-4">
                 <Section title="Trip details">
-                  <dl className="mt-3 grid gap-x-6 sm:grid-cols-2">
+                  <dl className="mt-2">
                     <Detail label="Travel date" value={formatDate(quotation.travel_date)} />
                     <Detail label="Return date" value={formatDate(quotation.return_date)} />
                     <Detail label="Valid until" value={formatDate(quotation.valid_until)} />
@@ -183,7 +183,7 @@ export default function QuotationDetailsPage() {
                   </dl>
                 </Section>
                 <Section title="Customer">
-                  <dl className="mt-3 grid gap-x-6 sm:grid-cols-2">
+                  <dl className="mt-2">
                     <Detail label="Name" value={quotation.customer?.name} />
                     <Detail label="Mobile" value={quotation.customer?.mobile} />
                     <Detail label="Email" value={quotation.customer?.email} />
@@ -238,7 +238,7 @@ export default function QuotationDetailsPage() {
                   {quotation.hotels.map((hotel, index) => (
                     <div key={hotel.id || index} className="border-t border-slate-100 pt-4 first:border-0 first:pt-0">
                       <h3 className="font-bold text-navy">{hotel.hotel_name || "Hotel"}</h3>
-                      <dl className="mt-2 grid gap-x-6 sm:grid-cols-2">
+                      <dl className="mt-2">
                         <Detail label="Place" value={hotel.place} />
                         <Detail label="Address" value={hotel.address} />
                         <Detail label="Check in" value={formatDate(hotel.check_in)} />
@@ -259,7 +259,7 @@ export default function QuotationDetailsPage() {
                   {quotation.vehicles.map((vehicle, index) => (
                     <div key={vehicle.id || index} className="border-t border-slate-100 pt-4 first:border-0 first:pt-0">
                       <h3 className="font-bold text-navy">{vehicle.vehicle_name || "Vehicle"}</h3>
-                      <dl className="mt-2 grid gap-x-6 sm:grid-cols-2">
+                      <dl className="mt-2">
                         <Detail label="Vehicle type" value={vehicle.vehicle_type} />
                         <Detail label="Quantity" value={vehicle.quantity} />
                         <Detail label="Start" value={formatDate(vehicle.start_date)} />
@@ -279,9 +279,9 @@ export default function QuotationDetailsPage() {
               {quotation.itinerary?.length ? (
                 <ol className="mt-3 space-y-3">
                   {quotation.itinerary.map((day, index) => (
-                    <li key={day.id || index} className="rounded-xl bg-slate-50 p-4">
+                    <li key={day.id || index} className="border-t border-slate-200 py-4 first:border-0 first:pt-0">
                       <h3 className="font-bold text-navy">Day {day.day_number || index + 1}: {day.title}</h3>
-                      <dl className="mt-2 grid gap-x-6 sm:grid-cols-2">
+                      <dl className="mt-2">
                         <Detail label="Date" value={formatDate(day.date)} />
                         <Detail label="Overnight location" value={day.overnight_location} />
                         <Detail label="Meal plan" value={day.meal_plan} />
@@ -294,7 +294,7 @@ export default function QuotationDetailsPage() {
             </Section></div>}
 
             {activeTab === "notes" && <div id="quotation-panel-notes" role="tabpanel" aria-labelledby="quotation-tab-notes"><Section title="Notes and conditions">
-              <dl className="mt-3 grid gap-x-6 sm:grid-cols-2">
+              <dl className="mt-2">
                 <Detail label="Inclusions" value={quotation.inclusion} />
                 <Detail label="Exclusions" value={quotation.exclusion} />
                 <Detail label="Important notes" value={quotation.important_notes} />

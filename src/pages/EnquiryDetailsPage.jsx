@@ -77,18 +77,18 @@ function formatBudget(value) {
 
 function Detail({ label, value }) {
   return (
-    <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3">
-      <dt className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{label}</dt>
-      <dd className="mt-1 whitespace-pre-wrap break-words text-sm font-semibold text-slate-800">{displayValue(value)}</dd>
+    <div className="grid grid-cols-[minmax(100px,0.38fr)_minmax(0,1fr)] items-start gap-4 border-t border-slate-200 py-3 sm:grid-cols-[minmax(160px,0.38fr)_minmax(0,1fr)]">
+      <dt className="text-xs font-medium text-slate-500">{label}</dt>
+      <dd className="whitespace-pre-wrap break-words text-right text-sm font-semibold text-slate-800">{displayValue(value)}</dd>
     </div>
   );
 }
 
 function Section({ title, children }) {
   return (
-    <section className="rounded-2xl border border-slate-200 border-l-4 border-l-indigo-400 bg-white p-5 shadow-card sm:p-6">
-      <h2 className="mb-3 font-display text-sm font-extrabold uppercase tracking-wider text-navy">{title}</h2>
-      <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{children}</dl>
+    <section className="border-b border-slate-200 pb-4 last:border-b-0">
+      <h2 className="mb-1 font-display text-sm font-extrabold uppercase tracking-wider text-navy">{title}</h2>
+      <dl>{children}</dl>
     </section>
   );
 }
@@ -239,7 +239,7 @@ export default function EnquiryDetailsPage() {
             <Link to="/my-enquiries" className="mt-4 inline-flex font-bold underline">Return to enquiries</Link>
           </div>
         ) : enquiry ? (
-          <article className="-mt-4 space-y-4 rounded-2xl border border-slate-200 bg-white p-3 shadow-card sm:p-5">
+          <article className="-mt-4 space-y-5">
             {lookupError && <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-medium text-amber-800">{lookupError}</p>}
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-2">
               <div className="flex gap-2 overflow-x-auto p-1" role="tablist" aria-label="Enquiry detail sections">
