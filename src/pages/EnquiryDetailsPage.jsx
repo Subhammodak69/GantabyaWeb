@@ -111,7 +111,9 @@ export default function EnquiryDetailsPage() {
     fetchEnquiries(0, 100)
       .then((response) => {
         if (!active) return;
-        const match = getEnquiries(response).find((item) => String(item.id) === String(enquiryId));
+        const match = getEnquiries(response).find((item) =>
+          String(item.id) === String(enquiryId) || String(item.enquiry_code) === String(enquiryId)
+        );
         if (!match) {
           setError("This enquiry could not be found. It may have been removed or is no longer available.");
           return;
@@ -313,7 +315,7 @@ export default function EnquiryDetailsPage() {
               </div>
             )}
             <Link
-              to={`/my-enquiries/${encodeURIComponent(enquiry.id)}/quotations`}
+              to={`/my-enquiries/${encodeURIComponent(enquiry.enquiry_code)}/quotations`}
               className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary-50 px-4 py-3 text-sm font-bold text-primary transition hover:bg-primary-100"
             >
               <FileText size={17} /> View quotations <ArrowRight size={16} />

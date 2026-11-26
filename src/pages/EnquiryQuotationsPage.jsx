@@ -35,7 +35,7 @@ function formatAmount(value) {
 }
 
 export default function EnquiryQuotationsPage() {
-  const { enquiryId } = useParams();
+  const { enquiryId: enquiryCode } = useParams();
   const navigate = useNavigate();
   const [quotations, setQuotations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,14 +50,14 @@ export default function EnquiryQuotationsPage() {
     setLoading(true);
     setError("");
     try {
-      const response = await fetchEnquiryQuotations(enquiryId);
+      const response = await fetchEnquiryQuotations(enquiryCode);
       setQuotations(getQuotations(response));
     } catch (loadError) {
       setError(loadError.message || "Could not load quotations.");
     } finally {
       setLoading(false);
     }
-  }, [enquiryId]);
+  }, [enquiryCode]);
 
   useEffect(() => {
     loadQuotations();
@@ -117,7 +117,7 @@ export default function EnquiryQuotationsPage() {
       }
       setActionLoading(true);
       try {
-        await acceptQuotation(action.quotation.id, cleanedTravellers);
+        await acceptQuotation(action.quotation.quotation_code, cleanedTravellers);
         setActionLoading(false);
         closeAction();
         await loadQuotations();
@@ -136,7 +136,7 @@ export default function EnquiryQuotationsPage() {
     }
     setActionLoading(true);
     try {
-      await rejectQuotation(action.quotation.id, reason);
+      await rejectQuotation(action.quotation.quotation_code, reason);
       setActionLoading(false);
       closeAction();
       await loadQuotations();
@@ -151,7 +151,7 @@ export default function EnquiryQuotationsPage() {
     <main className="min-h-screen bg-slate-50 pb-16">
       <section className="bg-navy px-4 py-9 text-white sm:px-6 lg:px-12">
         <div className="mx-auto max-w-5xl">
-          <Link to={`/my-enquiries/${encodeURIComponent(enquiryId)}`} className="inline-flex items-center gap-2 text-xs font-bold text-white/80 hover:text-white">
+          <Link to={`/my-enquiries/${encodeURIComponent(enquiryCode)}`} className="inline-flex items-center gap-2 text-xs font-bold text-white/80 hover:text-white">
             <ArrowLeft size={15} /> Back to enquiry
           </Link>
           <p className="mt-6 text-[10px] font-black uppercase tracking-[0.18em] text-primary-200">Travel dashboard</p>
@@ -189,11 +189,11 @@ export default function EnquiryQuotationsPage() {
                   : status === "DRAFT"
                     ? "border-amber-200 bg-amber-50 text-amber-800"
                     : "border-primary-200 bg-primary-50 text-primary";
-              const detailsPath = `/my-enquiries/${encodeURIComponent(enquiryId)}/quotations/${encodeURIComponent(quotation.id)}`;
+              const detailsPath = `/my-enquiries/${encodeURIComponent(enquiryCode)}/quotations/${encodeURIComponent(quotation.quotation_code)}`;
 
               return (
                 <article
-                  key={quotation.id}
+                  key={quotation.quotation_code}
                   role="link"
                   tabIndex={0}
                   aria-label={`View details for ${quotation.tour_name || quotation.quotation_code || "quotation"}`}

@@ -1000,8 +1000,8 @@ export async function deleteReview(reviewId) {
 }
 
 // ── Quotations ───────────────────────────────────────────────────────
-export async function fetchEnquiryQuotations(enquiryId) {
-  return request(`/api/v1/quotations/enquiry/${encodeURIComponent(enquiryId)}`, {}, true);
+export async function fetchEnquiryQuotations(enquiryCode) {
+  return request(`/api/v1/quotations/enquiry/${encodeURIComponent(enquiryCode)}`, {}, true);
 }
 
 export async function acceptQuotation(quotationId, travellers = []) {

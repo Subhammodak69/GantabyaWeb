@@ -49,7 +49,7 @@ function Section({ title, children }) {
 }
 
 export default function QuotationDetailsPage() {
-  const { enquiryId, quotationId } = useParams();
+  const { enquiryId: enquiryCode, quotationId: quotationCode } = useParams();
   const location = useLocation();
   const routeQuotation = location.state?.quotation;
   const [quotation, setQuotation] = useState(null);
@@ -59,8 +59,7 @@ export default function QuotationDetailsPage() {
 
   useEffect(() => {
     let active = true;
-    const matchesRoute = routeQuotation?.id === quotationId
-      && routeQuotation?.enquiry_id === enquiryId;
+    const matchesRoute = routeQuotation?.quotation_code === quotationCode;
 
     setActiveTab("overview");
     setError("");
@@ -72,9 +71,9 @@ export default function QuotationDetailsPage() {
 
     setQuotation(null);
     setLoading(true);
-    fetchEnquiryQuotations(enquiryId)
+    fetchEnquiryQuotations(enquiryCode)
       .then((response) => {
-        const found = getQuotations(response).find((item) => item.id === quotationId);
+        const found = getQuotations(response).find((item) => item.quotation_code === quotationCode);
         if (!found) throw new Error("This quotation could not be found for the selected enquiry.");
         if (active) setQuotation(found);
       })
@@ -86,9 +85,9 @@ export default function QuotationDetailsPage() {
       });
 
     return () => { active = false; };
-  }, [enquiryId, quotationId, routeQuotation]);
+  }, [enquiryCode, quotationCode, routeQuotation]);
 
-  const backToQuotations = `/my-enquiries/${encodeURIComponent(enquiryId)}/quotations`;
+  const backToQuotations = `/my-enquiries/${encodeURIComponent(enquiryCode)}/quotations`;
   const status = String(quotation?.status || "PENDING").toUpperCase();
   const statusColor = status === "ACCEPTED"
     ? "bg-emerald-300/20 text-emerald-100"
